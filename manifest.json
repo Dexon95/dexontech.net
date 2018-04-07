@@ -1,0 +1,12 @@
+{
+  "short_name": "Dexontech",
+  "name": "Dexontech",
+  "icons": [
+    {
+      "src": "images/avatar.png",
+      "type": "image/png",
+      "sizes": "256x256"
+    }
+  ],
+  "start_url": "/"
+}
