@@ -1,6 +1,6 @@
 {
   "name": "dexontech",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Dexon's site",
   "private": true,
   "keywords": [
@@ -10,6 +10,7 @@
   "homepage": "https://dexontech.net/",
   "main": "src/index.js",
   "dependencies": {
+    "axios": "^0.18.0",
     "react": "16.3.1",
     "react-dom": "16.3.1",
     "react-particles-js": "^2.1.2",

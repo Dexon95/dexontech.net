@@ -3,20 +3,10 @@ import Particles from 'react-particles-js';
 
 import { Link } from "react-router-dom";
 
-/*const styles = {
-  fontFamily: "sans-serif",
-  textAlign: "center"
-};
-
-const App = () => (
-  <div style={styles}> <h1>Hello world!</h1> </div>
-);*/
-
 export default class Home extends React.Component {
   constructor(props){
     super(props);
     this.state = {};
-    this.state.stylePath = 'styles/Home.css';
     this.state.particlesParams = {
       "particles": {
         "number": {
@@ -132,7 +122,9 @@ export default class Home extends React.Component {
     };
     
     return [
-      <link rel="stylesheet" type="text/css" href={this.state.stylePath} />,
+      <link rel="stylesheet" type="text/css" href="styles/bulma.min.css" />,
+      <link rel="stylesheet" type="text/css" href="styles/default.css" />,
+      <link rel="stylesheet" type="text/css" href="styles/Home.css" />,
       
       <section className="hero is-fullheight">
         <Particles style={ParticlesContainerStyle} params={this.state.particlesParams} />
@@ -180,6 +172,7 @@ export default class Home extends React.Component {
           <nav className="tabs is-boxed is-fullwidth">
             <div className="container">
               <ul>
+                <li><Link to="/c">Convert</Link></li>
               </ul>
             </div>
           </nav>
