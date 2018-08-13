@@ -21,13 +21,9 @@ export default class Convert extends React.Component {
     this.doConvert();
   }
 
-  componentDidUpdate() {
-
-  }
-
   handleInputChange(event) {
     if(event.target.id === 'fromAmount')
-      this.setState({fromAmount: parseInt(event.target.value, 10)});
+      this.setState({fromAmount: parseFloat(event.target.value)});
     else if(event.target.id === 'fromSymbol')
       this.setState({fromSymbol: String(event.target.value).toUpperCase()});
     else if(event.target.id === 'toSymbol')
@@ -40,9 +36,10 @@ export default class Convert extends React.Component {
       if(res.data["Response"] === "Error")
         this.setState({conversion: `Invalid pairs. (${this.state.fromSymbol}/${this.state.toSymbol})`});
       else
-        this.setState({conversion: `${this.state.fromAmount} ${this.state.fromSymbol} is ${(this.state.fromAmount * res.data[this.state.toSymbol])} ${this.state.toSymbol}`});
+        this.setState({conversion: `${this.state.fromAmount} ${this.state.fromSymbol} is ${parseFloat((this.state.fromAmount * res.data[this.state.toSymbol]).toFixed(6))} ${this.state.toSymbol}`});
     }).catch(err => {
       this.setState({conversion: `Invalid pairs. (${this.state.fromSymbol}/${this.state.toSymbol})`});
+      console.error(err);
     });
   }
   
@@ -72,14 +69,14 @@ export default class Convert extends React.Component {
               <form className="form-horizontal" onsubmit="return false">
                 <div className="form-group form-group-lg">
                   <div className="col-sm-5">
-                    <input className="form-control" type="number" min="0" id="fromAmount" placeholder="1" defaultValue="1" onChange={this.handleInputChange} />
+                    <input className="form-control" type="number" min="0" id="fromAmount" placeholder="1" defaultValue="1" autocomplete="off" onChange={this.handleInputChange}/>
                   </div>
                   <div className="col-sm-3">
-                    <input className="form-control" type="text" id="fromSymbol" placeholder="BTC" defaultValue="BTC" onChange={this.handleInputChange} />
+                    <input className="form-control" type="text" id="fromSymbol" placeholder="BTC" defaultValue="BTC" autocomplete="off" onChange={this.handleInputChange}/>
                   </div>
                   <label className="col-sm-1 control-label">to</label>
                   <div className="col-sm-3">
-                    <input className="form-control" type="text" id="toSymbol" placeholder="USD" defaultValue="USD" onChange={this.handleInputChange} />
+                    <input className="form-control" type="text" id="toSymbol" placeholder="USD" defaultValue="USD" autocomplete="off" onChange={this.handleInputChange}/>
                   </div>
                 </div>
                 <a className="btn btn-info" id="convert_button" onClick={this.doConvert}>Convert</a>
@@ -93,10 +90,6 @@ export default class Convert extends React.Component {
             </div>
           </div>
         </div>
-      </div>,
-
-      <div id="market_list">
-        <ul></ul>
       </div>
     ];
   }
