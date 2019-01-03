@@ -6,19 +6,34 @@
 	<meta name="description" content="Dexon's site">
 	<meta name="author" content="Dexon">
 
-	<link rel="manifest" href="%PUBLIC_URL%/manifest.json">
-	<link rel="shortcut icon" type="image/png" href="%PUBLIC_URL%/images/avatar.png">
+	<link rel="manifest" href="/manifest.json">
+	<link rel="shortcut icon" type="image/png" href="/images/avatar.png">
+	
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 	<title>Dexontech</title>
-
-	<link rel="stylesheet" href="%PUBLIC_URL%/styles/font-awesome.min.css?v=4.7.0">
+	
+	<style type="text/css">
+		@-ms-viewport     { width: device-width; }
+		@-o-viewport      { width: device-width; }
+		@viewport         { width: device-width; }
+		
+		html,
+		body {
+		  width: 100%;
+		  height: 100%;
+		  overflow: hidden;
+		  padding: 0;
+		  background-color: rgb(44, 62, 80);
+		}
+	</style>
 </head>
 
 <body>
 	<noscript>
 		JavaScript is required to view this site.
 	</noscript>
-	<div id="root"></div>
+	<div id="app"></div>
 </body>
 
 </html>

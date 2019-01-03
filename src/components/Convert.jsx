@@ -1,7 +1,6 @@
 import React from "react";
 import axios from 'axios';
-
-import { Link } from "react-router-dom";
+import M from "materialize-css";
 
 export default class Convert extends React.Component {
   constructor(props){
@@ -10,7 +9,13 @@ export default class Convert extends React.Component {
       fromAmount: 1,
       fromSymbol: 'BTC',
       toSymbol: 'USD',
-      conversion: ''
+      conversion: '',
+      autoRefresh: false,
+      autoRefreshProgress: 0,
+      autoRefreshTimer: null,
+      autoRefreshProgressBarStyle: {
+        display: 'none'
+      }
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -18,15 +23,28 @@ export default class Convert extends React.Component {
   }
 
   componentDidMount() {
+    M.AutoInit();
+    
     this.doConvert();
+    this.updateAutoRefreshProgress();
   }
 
   handleInputChange(event) {
-    if(event.target.id === 'fromAmount')
+    this.setState({autoRefresh: false});
+    
+    if(event.target.name !== 'autoRefresh')
+      this.refs['ref_autoRefreshCheckbox'].checked = false;
+    else
+      if(!event.target.checked)
+        this.setState({autoRefresh: false});
+      else 
+        this.setState({autoRefresh: true});
+    
+    if(event.target.name === 'fromAmount')
       this.setState({fromAmount: parseFloat(event.target.value)});
-    else if(event.target.id === 'fromSymbol')
+    else if(event.target.name === 'fromSymbol')
       this.setState({fromSymbol: String(event.target.value).toUpperCase()});
-    else if(event.target.id === 'toSymbol')
+    else if(event.target.name === 'toSymbol')
       this.setState({toSymbol: String(event.target.value).toUpperCase()});
   }
 
@@ -35,62 +53,104 @@ export default class Convert extends React.Component {
     .then(res => {
       if(res.data["Response"] === "Error")
         this.setState({conversion: `Invalid pairs. (${this.state.fromSymbol}/${this.state.toSymbol})`});
-      else
-        this.setState({conversion: `${this.state.fromAmount} ${this.state.fromSymbol} is ${parseFloat((this.state.fromAmount * res.data[this.state.toSymbol]).toFixed(6))} ${this.state.toSymbol}`});
+      else{
+        this.setState({conversion: `${this.state.fromAmount} ${this.state.fromSymbol} is ${parseFloat((this.state.fromAmount * res.data[this.state.toSymbol]).toFixed(6))} ${this.state.toSymbol}`, autoRefreshProgress: 0});
+      }
+        
     }).catch(err => {
       this.setState({conversion: `Invalid pairs. (${this.state.fromSymbol}/${this.state.toSymbol})`});
       console.error(err);
     });
   }
   
+  updateAutoRefreshProgress() {
+    if(this.state.autoRefresh){
+      this.setState({autoRefreshProgressBarStyle: {height: '2px'}});
+      if(this.state.autoRefreshProgress >= 100){
+        this.setState({autoRefreshProgress: 0});
+        this.doConvert();
+      }else{
+        let newProgress = this.state.autoRefreshProgress + 0.5;
+        this.setState({autoRefreshProgress: newProgress});
+      }
+    }else this.setState({autoRefreshProgressBarStyle: {display: 'none'}, autoRefreshProgress: 0});
+    let timer = setTimeout(() => {this.updateAutoRefreshProgress()}, 200);
+    this.setState({autoRefreshTimer: timer});
+  }
+  
   render() {
-
-    return [
-      <link rel="stylesheet" type="text/css" href="styles/bootstrap.min.css" />,
-      <link rel="stylesheet" type="text/css" href="styles/default.css" />,
-      <link rel="stylesheet" type="text/css" href="styles/Convert.css" />,
-      
-      <div className="site-wrapper">
-        <div className="site-wrapper-inner">
-          <div className="cover-container">
-            <div className="masthead clearfix">
-              <div className="inner">
-                <h3 className="masthead-brand">Convert</h3>
-                <nav>
-                  <ul class="nav masthead-nav">
-                    <li><Link to="/">Go Back</Link></li>
-                  </ul>
-                </nav>
+    const containerStyle = {
+      position: 'absolute',
+      top: '0', right: '0', bottom: '0', left: '0',
+      boxShadow: '0 0 300px 70px rgba(0, 0, 0, 0.2) inset',
+      backgroundColor: '#2c3e50',
+      backgroundImage: 'url(/images/noise.png), url(/images/sl.png)',
+      color: '#7f8c8d'
+    };
+    
+    const wrapperStyle = {
+      height: '100%',
+      textAlign: 'center',
+      position: 'relative'
+    };
+    
+    const inputStyle = {
+      color: '#fff'
+    };
+    
+    return (
+      <section style={containerStyle}>
+        
+        <div className="row valign-wrapper" style={wrapperStyle}>
+          <div className="col s12">
+            <div className="container">
+              <div className="row">
+                <div className="col s12">
+                  <div class="progress blue-grey lighten-5" style={this.state.autoRefreshProgressBarStyle}>
+                    <div class="determinate blue-grey lighten-2" style={{width: this.state.autoRefreshProgress + '%'}}></div>
+                  </div>
+                  <h4 style={{color: '#ecf0f1'}}>{this.state.conversion}</h4>
+                </div>
               </div>
-            </div>
-
-            <div className="inner cover">
-              <h1 className="cover-heading"><span id="conversion">{this.state.conversion}</span></h1>
-              <form className="form-horizontal" onsubmit="return false">
-                <div className="form-group form-group-lg">
-                  <div className="col-sm-5">
-                    <input className="form-control" type="number" min="0" id="fromAmount" placeholder="1" defaultValue="1" autocomplete="off" onChange={this.handleInputChange}/>
-                  </div>
-                  <div className="col-sm-3">
-                    <input className="form-control" type="text" id="fromSymbol" placeholder="BTC" defaultValue="BTC" autocomplete="off" onChange={this.handleInputChange}/>
-                  </div>
-                  <label className="col-sm-1 control-label">to</label>
-                  <div className="col-sm-3">
-                    <input className="form-control" type="text" id="toSymbol" placeholder="USD" defaultValue="USD" autocomplete="off" onChange={this.handleInputChange}/>
+              <div className="row">
+                <div className="col s12 m8 l6 offset-m2 offset-l3">
+                  <div className="row">
+                    <div className="col m2 s5 input-field">
+                      <input className="form-control" name="fromAmount" type="number" min="0" placeholder="1" defaultValue="1" autocomplete="off" onChange={this.handleInputChange} style={inputStyle}/>
+                      <label className="active">Amount</label>
+                    </div>
+                    <div className="col m5 s7 input-field">
+                      <input type="text" name="fromSymbol" placeholder="BTC" defaultValue="BTC" autocomplete="off" onChange={this.handleInputChange} style={inputStyle}/>
+                      <label className="active">From Symbol</label>
+                    </div>
+                    <div className="col m5 s12 input-field">
+                      <input type="text" name="toSymbol" placeholder="USD" defaultValue="USD" autocomplete="off" onChange={this.handleInputChange} style={inputStyle}/>
+                      <label className="active">To Symbol</label>
+                    </div>
                   </div>
                 </div>
-                <a className="btn btn-info" id="convert_button" onClick={this.doConvert}>Convert</a>
-              </form>
-            </div>
-
-            <div className="mastfoot">
-              <div className="inner">
-                <p>Using <a href="https://www.cryptocompare.com/" target="_blank" rel="noopener noreferrer">CryptoCompare</a>. Data fetched from over 20 different exchange websites.</p>
+              </div>
+              <div className="row">
+                <div className="col s12">
+                  <button class="btn waves-effect" onClick={this.doConvert}>
+                    Convert
+                  </button>
+                  <p>Auto refresh price</p>
+                  <div className="switch">
+                    <label>
+                      Off
+                      <input name="autoRefresh" ref="ref_autoRefreshCheckbox" type="checkbox" onChange={this.handleInputChange}/>
+                      <span className="lever"></span>
+                      On
+                    </label>
+                  </div>
+                  <p>Powered by <a href="https://www.cryptocompare.com/" target="_blank" rel="noopener noreferrer">CryptoCompare</a>.</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    ];
+      </section>
+    );
   }
 }

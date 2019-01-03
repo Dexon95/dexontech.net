@@ -3,6 +3,11 @@ import React from "react";
 import { render } from "react-dom";
 import { HashRouter, Switch, Route } from "react-router-dom";
 
+import 'materialize-css/dist/css/materialize.min.css';
+
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+
 import Home from "./components/Home";
 import Convert from "./components/Convert";
 
@@ -17,7 +22,11 @@ const App = () => (
 
 render(
   <HashRouter>
-    <App />
+    <div>
+      <Header />
+      <App />
+      <Footer />
+    </div>
   </HashRouter>,
-  document.getElementById("root")
+  document.querySelector("#app")
 );
