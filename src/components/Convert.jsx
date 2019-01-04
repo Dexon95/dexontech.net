@@ -2,7 +2,7 @@ import React from "react";
 import axios from 'axios';
 import M from "materialize-css";
 
-export default class Convert extends React.Component {
+class Convert extends React.Component {
   constructor(props){
     super(props);
     this.state = {
@@ -19,6 +19,7 @@ export default class Convert extends React.Component {
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
+    this.handleConvertButton = this.handleConvertButton.bind(this);
     this.doConvert = this.doConvert.bind(this);
   }
 
@@ -30,33 +31,33 @@ export default class Convert extends React.Component {
   }
 
   handleInputChange(event) {
-    this.setState({autoRefresh: false});
-    
-    if(event.target.name !== 'autoRefresh')
-      this.refs['ref_autoRefreshCheckbox'].checked = false;
-    else
+    if(event.target.name === 'autoRefresh')
       if(!event.target.checked)
         this.setState({autoRefresh: false});
       else 
         this.setState({autoRefresh: true});
     
     if(event.target.name === 'fromAmount')
-      this.setState({fromAmount: parseFloat(event.target.value)});
+      this.refs['ref_fromAmount'].value = parseFloat(this.refs['ref_fromAmount'].value);
     else if(event.target.name === 'fromSymbol')
-      this.setState({fromSymbol: String(event.target.value).toUpperCase()});
+      this.refs['ref_fromSymbol'].value = String(this.refs['ref_fromSymbol'].value).toUpperCase();
     else if(event.target.name === 'toSymbol')
-      this.setState({toSymbol: String(event.target.value).toUpperCase()});
+      this.refs['ref_toSymbol'].value = String(this.refs['ref_toSymbol'].value).toUpperCase();
   }
-
+  
+  handleConvertButton() {
+    this.setState({fromAmount: parseFloat(this.refs['ref_fromAmount'].value), fromSymbol: String(this.refs['ref_fromSymbol'].value).toUpperCase(), toSymbol: String(this.refs['ref_toSymbol'].value).toUpperCase()}, () => {
+      this.doConvert();
+    });
+  }
+  
   doConvert() {
     axios.get(`https://min-api.cryptocompare.com/data/price?fsym=${this.state.fromSymbol}&tsyms=${this.state.toSymbol}`)
     .then(res => {
       if(res.data["Response"] === "Error")
         this.setState({conversion: `Invalid pairs. (${this.state.fromSymbol}/${this.state.toSymbol})`});
-      else{
+      else
         this.setState({conversion: `${this.state.fromAmount} ${this.state.fromSymbol} is ${parseFloat((this.state.fromAmount * res.data[this.state.toSymbol]).toFixed(6))} ${this.state.toSymbol}`, autoRefreshProgress: 0});
-      }
-        
     }).catch(err => {
       this.setState({conversion: `Invalid pairs. (${this.state.fromSymbol}/${this.state.toSymbol})`});
       console.error(err);
@@ -67,8 +68,8 @@ export default class Convert extends React.Component {
     if(this.state.autoRefresh){
       this.setState({autoRefreshProgressBarStyle: {height: '2px'}});
       if(this.state.autoRefreshProgress >= 100){
-        this.setState({autoRefreshProgress: 0});
         this.doConvert();
+        this.setState({autoRefreshProgress: 0});
       }else{
         let newProgress = this.state.autoRefreshProgress + 0.5;
         this.setState({autoRefreshProgress: newProgress});
@@ -100,7 +101,6 @@ export default class Convert extends React.Component {
     
     return (
       <section style={containerStyle}>
-        
         <div className="row valign-wrapper" style={wrapperStyle}>
           <div className="col s12">
             <div className="container">
@@ -116,15 +116,15 @@ export default class Convert extends React.Component {
                 <div className="col s12 m8 l6 offset-m2 offset-l3">
                   <div className="row">
                     <div className="col m2 s5 input-field">
-                      <input className="form-control" name="fromAmount" type="number" min="0" placeholder="1" defaultValue="1" autocomplete="off" onChange={this.handleInputChange} style={inputStyle}/>
+                      <input className="form-control" name="fromAmount" ref="ref_fromAmount" type="number" min="0" placeholder="1" defaultValue="1" autocomplete="off" style={inputStyle} onChange={this.handleInputChange}/>
                       <label className="active">Amount</label>
                     </div>
                     <div className="col m5 s7 input-field">
-                      <input type="text" name="fromSymbol" placeholder="BTC" defaultValue="BTC" autocomplete="off" onChange={this.handleInputChange} style={inputStyle}/>
+                      <input name="fromSymbol" ref="ref_fromSymbol" type="text" placeholder="BTC" defaultValue="BTC" autocomplete="off" style={inputStyle} onChange={this.handleInputChange}/>
                       <label className="active">From Symbol</label>
                     </div>
                     <div className="col m5 s12 input-field">
-                      <input type="text" name="toSymbol" placeholder="USD" defaultValue="USD" autocomplete="off" onChange={this.handleInputChange} style={inputStyle}/>
+                      <input name="toSymbol" ref="ref_toSymbol" type="text" placeholder="USD" defaultValue="USD" autocomplete="off" style={inputStyle} onChange={this.handleInputChange}/>
                       <label className="active">To Symbol</label>
                     </div>
                   </div>
@@ -132,7 +132,7 @@ export default class Convert extends React.Component {
               </div>
               <div className="row">
                 <div className="col s12">
-                  <button class="btn waves-effect" onClick={this.doConvert}>
+                  <button class="btn waves-effect" onClick={this.handleConvertButton}>
                     Convert
                   </button>
                   <p>Auto refresh price</p>
@@ -154,3 +154,4 @@ export default class Convert extends React.Component {
     );
   }
 }
+export default Convert;
