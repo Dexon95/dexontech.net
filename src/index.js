@@ -10,12 +10,14 @@ import Footer from "./components/Footer";
 
 import Home from "./components/Home";
 import Convert from "./components/Convert";
+import Vanitygen from "./components/Vanitygen";
 
 const App = () => (
   <main>
     <Switch>
       <Route exact path="/" component={Home} />
       <Route exact path="/c" component={Convert} />
+      <Route exact path="/vanitygen" component={Vanitygen} />
     </Switch>
   </main>
 );

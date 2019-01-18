@@ -105,7 +105,7 @@ class Convert extends React.Component {
           <div className="col s12">
             <div className="container">
               <div className="row">
-                <div className="col s12">
+                <div className="col s12 m8 l6 offset-m2 offset-l3">
                   <div class="progress blue-grey lighten-5" style={this.state.autoRefreshProgressBarStyle}>
                     <div class="determinate blue-grey lighten-2" style={{width: this.state.autoRefreshProgress + '%'}}></div>
                   </div>
