@@ -37,9 +37,7 @@ class Convert extends React.Component {
       else 
         this.setState({autoRefresh: true});
     
-    if(event.target.name === 'fromAmount')
-      this.refs['ref_fromAmount'].value = parseFloat(this.refs['ref_fromAmount'].value);
-    else if(event.target.name === 'fromSymbol')
+    if(event.target.name === 'fromSymbol')
       this.refs['ref_fromSymbol'].value = String(this.refs['ref_fromSymbol'].value).toUpperCase();
     else if(event.target.name === 'toSymbol')
       this.refs['ref_toSymbol'].value = String(this.refs['ref_toSymbol'].value).toUpperCase();
