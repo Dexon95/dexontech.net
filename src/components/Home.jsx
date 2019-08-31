@@ -19,8 +19,8 @@ class Home extends React.Component {
     return (
       <section style={containerStyle}>
         
-        <div class="row valign-wrapper" style={{height: '100%', textAlign: 'center', position: 'relative'}}>
-          <div class="col s12">
+        <div className="row valign-wrapper" style={{height: '100%', textAlign: 'center', position: 'relative'}}>
+          <div className="col s12">
             <h4 style={{color: '#ecf0f1', margin: '0'}}>Hello, I build Web stuff</h4>
             <h5 style={{color: '#7f8c8d', margin: '1rem 0'}}>contact@dexontech.net</h5>
           </div>

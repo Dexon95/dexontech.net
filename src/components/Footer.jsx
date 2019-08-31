@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import { faBitcoin } from '@fortawesome/free-brands-svg-icons';
 import { faCoins } from '@fortawesome/free-solid-svg-icons';
+import { faRobot } from '@fortawesome/free-solid-svg-icons';
 
 class Footer extends React.Component {
   componentDidMount() {
@@ -40,6 +41,9 @@ class Footer extends React.Component {
             </Link>
             <Link to="/vanitygen" className="waves-effect btn-flat" style={iconLinkStyle}>
               <FontAwesomeIcon icon={faBitcoin} className='material-icons left' style={iconStyle}/> Vanity Generator
+            </Link>
+            <Link to="/aipong" className="waves-effect btn-flat" style={iconLinkStyle}>
+              <FontAwesomeIcon icon={faRobot} className='material-icons left' style={iconStyle}/> Machine Learning - Pong
             </Link>
           </div>
         </div>
