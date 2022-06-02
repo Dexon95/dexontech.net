@@ -1,0 +1,18 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html {
+  background-color: #242424;
+  z-index: -2;
+}
+
+body {
+  box-shadow: inset 0 0 10vw rgba(0, 0, 0, 0.65);
+  background-color: transparent !important;
+}

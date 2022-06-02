@@ -1,0 +1,13 @@
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: white;
+  background-color: #242424;
+  font-size: 32px;
+  opacity: 1;
+  transition: opacity 1s ease;
+  position: relative;
+  z-index: 100;
+}

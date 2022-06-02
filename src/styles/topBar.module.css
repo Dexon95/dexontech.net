@@ -1,0 +1,39 @@
+.topBar {
+  width: 100%;
+  height: 64px;
+  padding: 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  z-index: 1;
+  position: relative;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  font-variant: small-caps;
+  margin: 0 10px;
+}
+
+.role {
+  font-size: 14px;
+}
+
+.jsfiddle_color {
+  color: #2E71FF !important;
+}
+
+.jsfiddle_color:hover {
+  color: rgba(46, 113, 255, 0.7) !important;
+}
+
+.github_color {
+  color: #F0F6FC !important;
+}
+
+.github_color:hover {
+  color: rgba(240, 246, 252, 0.7) !important;
+}
