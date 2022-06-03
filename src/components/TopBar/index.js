@@ -3,7 +3,8 @@ import { Tooltip, Button } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faJsfiddle, faGithub } from '@fortawesome/free-brands-svg-icons';
 
-import { topBar, title, role, github_color, jsfiddle_color } from './styles.module.css';
+import { github_color, jsfiddle_color } from '../../styles/icon.module.css';
+import { topBar, title, role } from './styles.module.css';
 
 export default function TopBar() {
   return (

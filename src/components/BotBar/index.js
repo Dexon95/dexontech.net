@@ -1,5 +1,5 @@
 import { useContext, useState, useRef } from 'react';
-import { Tooltip, Button } from 'antd';
+import { Tooltip, Button, Row, Col } from 'antd';
 
 import { AppContext } from '../Layout';
 
@@ -20,14 +20,28 @@ export default function BottomBar() {
 
   return (
     <div className={botBar}>
-      {fxHash && fxHash !== "oo" &&
-        <>
-          <Tooltip title={isCopied ? "Copied!" : "Share"} color={isCopied ? "#52C41A" : ""}>
-            <Button type="text" onClick={copyHashToClipboard} className={btn}>{fxHash}</Button>
-          </Tooltip>
-          {res}
-        </>
-      }
+      <Row>
+        <Col xs={{ span: 24 }} sm={{ span: 0 }}>
+          {fxHash && fxHash !== "oo" &&
+            <>
+              <Tooltip title={isCopied ? "Copied!" : "Share"} color={isCopied ? "#52C41A" : ""}>
+                <Button type="text" onClick={copyHashToClipboard} className={btn}>Share Hash</Button>
+              </Tooltip>
+            </>
+          }
+        </Col>
+        <Col xs={{ span: 0 }} sm={{ span: 24 }}>
+          {fxHash && fxHash !== "oo" &&
+            <>
+              Art Hash:
+              <Tooltip title={isCopied ? "Copied!" : "Share"} color={isCopied ? "#52C41A" : ""}>
+                <Button type="text" onClick={copyHashToClipboard} className={btn}>{fxHash}</Button>
+              </Tooltip>
+              {res}
+            </>
+          }
+        </Col>
+      </Row>
     </div>
   );
 }

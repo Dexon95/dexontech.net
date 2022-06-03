@@ -1,0 +1,47 @@
+.jsfiddle_color {
+  color: #2E71FF !important;
+}
+
+a.jsfiddle_color:hover {
+  color: rgba(46, 113, 255, 0.7) !important;
+}
+
+.github_color {
+  color: #F0F6FC !important;
+}
+
+a.github_color:hover {
+  color: rgba(240, 246, 252, 0.7) !important;
+}
+
+.nodejs_color {
+  color: #026E00 !important;
+}
+
+.react_color {
+  color: #61DAFB !important;
+}
+
+.bootstrap_color {
+  color: #6F11F4 !important;
+}
+
+.bitcoin_color {
+  color: #F7931A !important;
+}
+
+.html_color {
+  color: #E54C21 !important;
+}
+
+.cloud_color {
+  color: #1C8ADB !important;
+}
+
+.ubuntu_color {
+  color: #FF8C00 !important;
+}
+
+.postgresql_color {
+  color: #2F6792 !important;
+}
