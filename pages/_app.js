@@ -2,8 +2,12 @@ import Head from 'next/head';
 
 import Layout from '../src/components/Layout';
 
+import { config as fontawesomeConfig } from '@fortawesome/fontawesome-svg-core';
 import '../src/styles/App.css';
 import 'antd/dist/antd.css';
+import '@fortawesome/fontawesome-svg-core/styles.css';
+
+fontawesomeConfig.autoAddCss = false;
 
 export default function MyApp({ Component, pageProps }) {
   return (
