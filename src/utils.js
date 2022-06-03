@@ -1,14 +1,4 @@
-export const stopLoading = () => {
-  const loadingComponent = document.getElementById('loading');
-  if (loadingComponent) {
-    document.getElementById('loading').style.opacity = '0';
-    setTimeout(() => {
-      document.getElementById('loading').remove();
-    }, 600);
-  }
-};
-
-export const getLocalOrDef = (key, def) => {
+const getLocalOrDef = (key, def) => {
   if (typeof window !== "undefined") {
     return localStorage.getItem(key) || def;
   } else {

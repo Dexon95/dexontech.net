@@ -1,4 +1,4 @@
-import { loadingContainer } from '../styles/loading.module.css';
+import { loadingContainer } from './styles.module.css';
 export default () => {
   return (
     <div id="loading" className={loadingContainer}>

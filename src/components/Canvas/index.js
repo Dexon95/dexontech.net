@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useContext, useRef } from 'react';
+
 import dynamic from 'next/dynamic';
 import PQueue from 'p-queue';
 
-import { fx, stopLoading } from '../utils';
+import { AppContext } from '../Layout';
+import { fx } from '../../utils';
 
-import { canvasContainer } from '../styles/p5Canvas.module.css';
+import { canvasContainer } from './styles.module.css';
 
 // Will only import `react-p5` on client-side
 const Sketch = dynamic(() => import('react-p5').then((mod) => mod.default), {
@@ -16,6 +18,7 @@ const Q = new PQueue({ concurrency: 5 });
 export default function Canvas({ query }) {
   var FX, w, h;
 
+  const { setIsLoading, setFxHash, setRes } = useContext(AppContext);
   const _Canvas = useRef(null);
 
   const setup = (p5, canvasParentRef) => {
@@ -26,6 +29,8 @@ export default function Canvas({ query }) {
 
   const draw = async (p5) => {
     FX = fx(query.h ? query.h : typeof query.reset === 'string');
+    setFxHash(FX.hash);
+    setRes(`(${w}x${h})`);
 
     p5.noLoop();
     p5.background(0);
@@ -75,7 +80,7 @@ export default function Canvas({ query }) {
 
     _Canvas.current.updatePixels();
 
-    stopLoading();
+    setIsLoading(false);
   };
 
   const windowResized = (p5) => {
@@ -102,7 +107,7 @@ export default function Canvas({ query }) {
    */
   const genNewColor = () => {
     return {
-      hue: FX.randomInt(25, 200),
+      hue: FX.randomInt(0, 360),
       saturation: FX.randomInt(25, 75),
       brightness: FX.randomInt(75, 100)
     };
