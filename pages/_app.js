@@ -11,6 +11,7 @@ export default function MyApp({ Component, pageProps }) {
       <Head>
         <title>Dexontech.net</title>
         <meta name="theme-color" content="#242424" />
+        <link rel="shortcut icon" type="image/png" href="/avatar.png" />
       </Head>
       <Layout>
         <Component {...pageProps} />

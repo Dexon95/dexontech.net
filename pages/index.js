@@ -1,4 +1,4 @@
-import Canvas from '../src/components/canvas';
+import Canvas from '../src/components/Canvas';
 
 import { container, content } from '../src/styles/index.module.css';
 
