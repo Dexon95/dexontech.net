@@ -8,6 +8,6 @@ export default function BottomBar() {
   const { fxHash, res } = useContext(AppContext);
 
   return (
-    <div className={botBar}>Art hash: {fxHash} {res}</div>
+    <div className={botBar}>{fxHash && fxHash !== "oo" && `Art hash: ${fxHash} ${res}`}</div>
   );
 }
