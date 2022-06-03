@@ -13,9 +13,9 @@
 
 .btn,
 .btn:focus {
-  color: rgba(255, 255, 255, 0.17);
+  color: rgba(255, 255, 255, 0.17) !important;
 }
 
 .btn:hover {
-  color: rgba(255, 255, 255, 0.47);
+  color: rgba(255, 255, 255, 0.47) !important;
 }
