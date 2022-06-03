@@ -98,7 +98,17 @@ export default function Canvas({ query }) {
   };
 
   const setGrainColor = (p5, x, y, { hue, saturation: s, brightness: b }) => {
-    _Canvas.current.set(x, y, p5.color(hue, s, FX.randomInt(b - 7, b + 7)));
+    const dist = getDistance(x, y, w / 2, h / 2) - 256;
+
+    b -= Math.max(0, dist / (Math.min(w, h) * 0.08));
+    b += FX.randomInt(-7, 7);
+    b = Math.max(0, b);
+
+    _Canvas.current.set(x, y, p5.color(hue, s, b));
+  };
+
+  const getDistance = (x1, y1, x2, y2) => {
+    return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
   };
 
   /**
@@ -108,8 +118,8 @@ export default function Canvas({ query }) {
   const genNewColor = () => {
     return {
       hue: FX.randomInt(0, 360),
-      saturation: FX.randomInt(25, 75),
-      brightness: FX.randomInt(75, 100)
+      saturation: FX.randomInt(25, 70),
+      brightness: FX.randomInt(70, 90)
     };
   };
 

@@ -10,3 +10,12 @@
   position: absolute;
   z-index: 1;
 }
+
+.btn,
+.btn:focus {
+  color: rgba(255, 255, 255, 0.17);
+}
+
+.btn:hover {
+  color: rgba(255, 255, 255, 0.47);
+}
