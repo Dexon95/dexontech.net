@@ -13,6 +13,7 @@ export default function MyApp({ Component, pageProps }) {
   return (
     <>
       <Head>
+        <meta name="viewport" content="user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=0.2,width=device-width" />
         <title>Dexontech.net</title>
         <meta name="theme-color" content="#242424" />
         <link rel="shortcut icon" type="image/png" href="/avatar.png" />
