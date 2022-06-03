@@ -1,7 +1,6 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState } from 'react';
 import TopBar from "./TopBar";
 import BotBar from "./BotBar";
-import Loading from './Loading';
 
 export const AppContext = createContext(null);
 
@@ -13,7 +12,6 @@ export default (props) => {
   return (
     <>
       <AppContext.Provider value={{ isLoading, setIsLoading, fxHash, setFxHash, res, setRes }}>
-        {(isLoading && props.children.type.name !== "Error") && <Loading />}
         <TopBar />
         {props.children}
         <BotBar />
