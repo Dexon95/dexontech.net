@@ -1,6 +1,6 @@
 import { createContext, useState } from 'react';
-import TopBar from "./TopBar";
-import BotBar from "./BotBar";
+import TopBar from "./TopBar/TopBar";
+import BotBar from "./BotBar/BotBar";
 
 export const AppContext = createContext(null);
 
