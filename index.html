@@ -1,1 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="theme-color" content="#242424"/><title>Dexontech.net</title><script defer="defer" src="/static/js/main.f9385af4.js"></script><link href="/static/css/main.c44a9e14.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#242424" />
+    <title>Dexontech.net</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" crossorigin href="/assets/index-9pEFOSjq.css">
+  </head>
+  <body>
+    <div class="screen">
+      <div class="screen-text">
+        <h1>Dexon</h1>
+        <h2>Web developer</h2>
+      </div>
+      
+      <img class="npc" src="/npc.png" alt="NPC" />
+    </div>
+
+
+    <svg width="0" height="0">
+      <filter id="ca">
+        <feColorMatrix
+          type="matrix"
+          result="red_"
+          values="0.5 0.2 0 0 0
+                  0 0 0 0 0 
+                  0 0 0 0 0 
+                  0 0 0 1 0"
+        />
+        <feOffset in="pink_" dx="1" dy="0" result="pink" />
+        <feColorMatrix
+          type="matrix"
+          in="SourceGraphic"
+          result="blue_"
+          values="0 0 0 0 0
+                  0 0.8 0 0 0 
+                  0 0 0.8 0 0 
+                  0 0 0 1 0"
+        />
+        <feOffset in="cyan_" dx="-1" dy="0" result="cyan" />
+        <feBlend mode="screen" in="pink" in2="cyan" />
+      </filter>
+    </svg>
+  </body>
+</html>
