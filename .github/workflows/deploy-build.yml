@@ -1,0 +1,76 @@
+name: Deploy Build
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to build branch
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Preserve the build output
+          cp -a dist /tmp/dist
+
+          # Fetch build branch if it exists
+          git fetch origin build || true
+
+          if git show-ref --verify --quiet refs/remotes/origin/build; then
+            git switch --track origin/build
+
+            # Preserve files that should survive deployments
+            [ -f CNAME ] && cp CNAME /tmp/
+            [ -f LICENSE.md ] && cp LICENSE.md /tmp/
+            [ -f README.md ] && cp README.md /tmp/
+          else
+            git switch --orphan build
+            git rm -rf . || true
+          fi
+
+          # Remove everything except the Git metadata
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+
+          # Copy the CONTENTS of dist to the repository root
+          cp -a /tmp/dist/. .
+
+          # Restore preserved files
+          [ -f /tmp/CNAME ] && cp /tmp/CNAME .
+          [ -f /tmp/LICENSE.md ] && cp /tmp/LICENSE.md .
+          [ -f /tmp/README.md ] && cp /tmp/README.md .
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Build from ${{ github.ref_name }}"
+          git push -u origin build
