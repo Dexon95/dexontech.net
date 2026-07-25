@@ -1,149 +1,459 @@
+@font-face {
+  font-family: "EarlyGameboy";
+  src: url("/EarlyGameBoy.ttf") format("truetype");
+  font-display: swap;
+}
+
+
+
+html,
 body {
+
   margin: 0;
   padding: 0;
-  background-color: #000000;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
 
-.screen {
-  width: 800px;
-  height: 600px;
-  margin-top: clamp(10px, 10vh, 100px);
-  border-radius: 2px;
-  animation: lightUp 2.5s ease-out forwards;
-  position: relative;
-  padding: 40px;
-  box-sizing: border-box;
-  overflow: hidden;
-
-  -webkit-filter: url(#ca);
-  filter: url(#ca);
-}
-
-.screen::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.03) 0px,
-    rgba(0, 0, 0, 0.03) 1px,
-    transparent 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  z-index: 5;
+
+  background: #000;
+
 }
 
-.screen::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 0.3px;
-  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
-  animation: scanLine 3s linear 2.5s infinite;
-  pointer-events: none;
-  z-index: 10;
+
+
+body {
+
+  display: flex;
+
+  justify-content: center;
+  align-items: flex-start;
+
+  overflow: hidden;
+
 }
+
+
+
+.hidden {
+  display: none;
+}
+
+
+
+.screen {
+
+  width: 800px;
+  height: 600px;
+
+  margin-top: clamp(10px, 10vh, 100px);
+
+  padding: 40px;
+
+  box-sizing: border-box;
+
+  position: relative;
+
+  overflow: hidden;
+
+  animation: lightUp 2.5s ease-out forwards;
+
+  filter: url(#ca);
+
+}
+
+
+
+.screen::before {
+
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+
+  background:
+
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,.03),
+      rgba(0,0,0,.03) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+
+
+  pointer-events:none;
+
+}
+
+
 
 .screen-text {
-  position: absolute;
-  top: 40px;
-  left: 40px;
-  color: #3a3a3a;
-  margin: 0;
-  font-family: "Source Code Pro", monospace;
+
+  font-family: "EarlyGameboy", monospace;
+
+  color:#3a3a3a;
+
 }
 
-.screen-text h1 {
-  font-size: 4rem;
-  font-weight: 600;
-  margin: 0;
-  opacity: 0;
-  animation: textFadeIn 1s ease-out forwards;
-  animation-delay: 2.2s;
-  color: #3a3a3a;
-  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+
+
+.ctf-layout {
+
+  height:100%;
+
+  display:flex;
+
+  flex-direction:column;
+
 }
 
-.screen-text h2 {
-  font-size: 1.5rem;
-  font-weight: 400;
-  line-height: 1.4;
-  margin: 0 0 0 4px;
-  opacity: 0;
-  animation: textFadeIn 1s ease-out forwards;
-  animation-delay: 2.4s;
-  color: #3a3a3a;
-  text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.15);
+
+
+h1 {
+
+  margin:0;
+
+  font-size:3rem;
+
 }
 
-@keyframes textFadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+
+
+h2 {
+
+  margin:0 0 20px 4px;
+
+  font-size:1.15rem;
+
 }
 
-@keyframes lightUp {
-  0% {
-    background-color: #3a4546;
-    box-shadow: 0 0 0 rgba(207, 221, 222, 0), inset 0 0 0 rgba(207, 221, 222, 0);
-  }
-  50% {
-    background-color: #c2c7b7;
-    box-shadow: 0 0 8px rgba(207, 221, 222, 0.3), inset 0 0 5px rgba(207, 221, 222, 0.15);
-  }
-  51% {
-    background-color: #F3FAE5;
-    box-shadow: 0 0 15px rgba(226, 253, 255, 0.4), inset 0 0 10px rgba(226, 253, 255, 0.25);
-  }
-  100% {
-    background-color: #F3FAE5;
-    box-shadow: 0 0 15px rgba(226, 253, 255, 0.4), inset 0 0 10px rgba(226, 253, 255, 0.25);
-  }
+
+
+a {
+
+  color:#3a3a3a;
+
 }
 
-@keyframes scanLine {
-  0% {
-    top: 100%;
-  }
-  100% {
-    top: -3px;
-  }
+
+
+.ctf-header {
+
+  flex:none;
+
 }
 
-html {
-  background-color: #000000;
+
+
+#ctf-stats {
+
+  display:flex;
+
+  gap:30px;
+
+  margin-top:20px;
+
 }
+
+
+
+/*
+    Middle section
+*/
+
+#ctf-columns {
+
+  display:flex;
+
+  flex:1;
+
+  gap:40px;
+
+  margin-top:30px;
+
+  min-height:0;
+
+}
+
+
+
+#ctf-bet-panel {
+
+  flex:1;
+
+}
+
+
+
+#ctf-history-panel {
+
+  flex:1;
+
+}
+
+
+
+#ctf-history {
+
+  height:100%;
+
+}
+
+
+
+#ctf-seed-history {
+
+  padding-left:20px;
+
+  margin:10px 0;
+
+}
+
+
+
+details {
+
+  overflow:hidden;
+
+}
+
+
+
+/*
+    Inputs
+*/
+
+
+input {
+
+  background:transparent;
+
+  border:none;
+
+  border-bottom:
+
+    1px solid #3a3a3a;
+
+
+  font-family:inherit;
+
+  color:#3a3a3a;
+
+  outline:none;
+
+}
+
+
+
+input:focus {
+
+  border-bottom:
+
+    2px solid #3a3a3a;
+
+}
+
+
+
+input[type="number"] {
+
+  width:70px;
+
+}
+
+
+
+input[type="text"] {
+
+  width:220px;
+
+}
+
+
+
+/*
+    Slider
+*/
+
+
+#ctf-threshold {
+
+  width:220px;
+
+  margin:15px 0;
+
+}
+
+
+
+/*
+    Buttons
+*/
+
+
+button {
+
+  font-family:inherit;
+
+  background:transparent;
+
+  border:
+
+    1px solid #3a3a3a;
+
+  color:#3a3a3a;
+
+  padding:8px 16px;
+
+  cursor:pointer;
+
+}
+
+
+
+button:hover {
+
+  background:#3a3a3a;
+
+  color:#F3FAE5;
+
+}
+
+
+
+.buttons {
+
+  display:flex;
+
+  gap:15px;
+
+  margin-top:15px;
+
+}
+
+
+
+form {
+
+  margin-bottom:25px;
+
+}
+
+
+
+/*
+    Bottom log
+*/
+
+
+#ctf-log {
+
+  flex:none;
+
+  height:80px;
+
+  margin-top:20px;
+
+  overflow:hidden;
+
+}
+
+
 
 .npc {
-  position: absolute;
-  bottom: 0;
-  right: 40px;
-  max-width: 250px;
-  max-height: 250px;
-  z-index: 8;
-  opacity: 0;
-  animation: textFadeIn 1s ease-out forwards;
-  animation-delay: 2.3s;
+
+  position:absolute;
+
+  right:40px;
+
+  bottom:0;
+
+  max-width:250px;
+
+  max-height:250px;
+
+  opacity:0;
+
+  animation:textFadeIn 1s ease-out forwards;
+
+  animation-delay:2.3s;
+
 }
 
-.google-sans-code-regular {
-  font-family: "Google Sans Code", monospace;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  font-style: normal;
-  font-variation-settings:
-    "MONO" 1;
+
+
+/*
+ Animations
+*/
+
+
+@keyframes textFadeIn {
+
+  from {
+    opacity:0;
+  }
+
+  to {
+    opacity:1;
+  }
+
+}
+
+
+
+@keyframes lightUp {
+
+  0% {
+
+    background:#3a4546;
+
+  }
+
+
+  50% {
+
+    background:#c2c7b7;
+
+  }
+
+
+  100% {
+
+    background:#F3FAE5;
+
+    box-shadow:
+
+      0 0 15px rgba(226,253,255,.4),
+      inset 0 0 10px rgba(226,253,255,.25);
+
+  }
+
+}
+
+
+
+@keyframes scanLine {
+
+  from {
+    top:100%;
+  }
+
+  to {
+    top:-3px;
+  }
+
+}
+
+
+
+@media(max-width:700px) {
+
+  #ctf-columns {
+
+    flex-direction:column;
+
+  }
+
 }
