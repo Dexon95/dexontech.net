@@ -4,11 +4,8 @@
   font-display: swap;
 }
 
-
-
 html,
 body {
-
   margin: 0;
   padding: 0;
 
@@ -16,32 +13,22 @@ body {
   height: 100%;
 
   background: #000;
-
 }
 
-
-
 body {
-
   display: flex;
 
   justify-content: center;
   align-items: flex-start;
 
   overflow: hidden;
-
 }
-
-
 
 .hidden {
   display: none;
 }
 
-
-
 .screen {
-
   width: 800px;
   height: 600px;
 
@@ -58,402 +45,276 @@ body {
   animation: lightUp 2.5s ease-out forwards;
 
   filter: url(#ca);
-
 }
 
-
-
 .screen::before {
-
   content: "";
 
   position: absolute;
 
   inset: 0;
 
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03),
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
 
-  background:
-
-    repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,.03),
-      rgba(0,0,0,.03) 1px,
-      transparent 1px,
-      transparent 2px
-    );
-
-
-  pointer-events:none;
-
+  pointer-events: none;
 }
 
-
+.screen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0.3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 0, 0, 0.1),
+    transparent
+  );
+  animation: scanLine 3s linear 2.5s infinite;
+  pointer-events: none;
+  z-index: 10;
+}
 
 .screen-text {
-
   font-family: "EarlyGameboy", monospace;
 
-  color:#3a3a3a;
-
+  color: #3a3a3a;
 }
-
-
 
 .ctf-layout {
+  height: 100%;
 
-  height:100%;
+  display: flex;
 
-  display:flex;
-
-  flex-direction:column;
-
+  flex-direction: column;
 }
-
-
 
 h1 {
+  margin: 0;
 
-  margin:0;
-
-  font-size:3rem;
-
+  font-size: 3rem;
 }
-
-
 
 h2 {
+  margin: 0 0 20px 4px;
 
-  margin:0 0 20px 4px;
-
-  font-size:1.15rem;
-
+  font-size: 1.15rem;
 }
-
-
 
 a {
-
-  color:#3a3a3a;
-
+  color: #3a3a3a;
 }
-
-
 
 .ctf-header {
-
-  flex:none;
-
+  flex: none;
 }
-
-
 
 #ctf-stats {
+  display: flex;
 
-  display:flex;
+  gap: 30px;
 
-  gap:30px;
-
-  margin-top:20px;
-
+  margin-top: 20px;
 }
-
-
 
 /*
     Middle section
 */
 
 #ctf-columns {
+  display: flex;
 
-  display:flex;
+  flex: 1;
 
-  flex:1;
+  gap: 40px;
 
-  gap:40px;
+  margin-top: 30px;
 
-  margin-top:30px;
-
-  min-height:0;
-
+  min-height: 0;
 }
-
-
 
 #ctf-bet-panel {
-
-  flex:1;
-
+  flex: 1;
 }
-
-
 
 #ctf-history-panel {
-
-  flex:1;
-
+  flex: 1;
 }
-
-
 
 #ctf-history {
-
-  height:100%;
-
+  height: 100%;
 }
-
-
 
 #ctf-seed-history {
+  padding-left: 20px;
 
-  padding-left:20px;
-
-  margin:10px 0;
-
+  margin: 10px 0;
 }
-
-
 
 details {
-
-  overflow:hidden;
-
+  overflow: hidden;
 }
-
-
 
 /*
     Inputs
 */
 
-
 input {
+  background: transparent;
 
-  background:transparent;
+  border: none;
 
-  border:none;
+  border-bottom: 1px solid #3a3a3a;
 
-  border-bottom:
+  font-family: inherit;
 
-    1px solid #3a3a3a;
+  color: #3a3a3a;
 
-
-  font-family:inherit;
-
-  color:#3a3a3a;
-
-  outline:none;
-
+  outline: none;
 }
-
-
 
 input:focus {
-
-  border-bottom:
-
-    2px solid #3a3a3a;
-
+  border-bottom: 2px solid #3a3a3a;
 }
-
-
 
 input[type="number"] {
-
-  width:70px;
-
+  width: 70px;
 }
-
-
 
 input[type="text"] {
-
-  width:220px;
-
+  width: 220px;
 }
-
-
 
 /*
     Slider
 */
 
-
 #ctf-threshold {
+  width: 220px;
 
-  width:220px;
-
-  margin:15px 0;
-
+  margin: 15px 0;
 }
-
-
 
 /*
     Buttons
 */
 
-
 button {
+  font-family: inherit;
 
-  font-family:inherit;
+  background: transparent;
 
-  background:transparent;
+  border: 1px solid #3a3a3a;
 
-  border:
+  color: #3a3a3a;
 
-    1px solid #3a3a3a;
+  padding: 8px 16px;
 
-  color:#3a3a3a;
-
-  padding:8px 16px;
-
-  cursor:pointer;
-
+  cursor: pointer;
 }
-
-
 
 button:hover {
+  background: #3a3a3a;
 
-  background:#3a3a3a;
-
-  color:#F3FAE5;
-
+  color: #f3fae5;
 }
-
-
 
 .buttons {
+  display: flex;
 
-  display:flex;
+  gap: 15px;
 
-  gap:15px;
-
-  margin-top:15px;
-
+  margin-top: 15px;
 }
-
-
 
 form {
-
-  margin-bottom:25px;
-
+  margin-bottom: 25px;
 }
-
-
 
 /*
     Bottom log
 */
 
-
 #ctf-log {
+  flex: none;
 
-  flex:none;
+  height: 80px;
 
-  height:80px;
+  margin-top: 20px;
 
-  margin-top:20px;
-
-  overflow:hidden;
-
+  overflow: hidden;
 }
-
-
 
 .npc {
+  position: absolute;
 
-  position:absolute;
+  right: 40px;
 
-  right:40px;
+  bottom: 0;
 
-  bottom:0;
+  max-width: 250px;
 
-  max-width:250px;
+  max-height: 250px;
 
-  max-height:250px;
+  opacity: 0;
 
-  opacity:0;
+  animation: textFadeIn 1s ease-out forwards;
 
-  animation:textFadeIn 1s ease-out forwards;
-
-  animation-delay:2.3s;
-
+  animation-delay: 2.3s;
 }
-
-
 
 /*
  Animations
 */
 
-
 @keyframes textFadeIn {
-
   from {
-    opacity:0;
+    opacity: 0;
   }
 
   to {
-    opacity:1;
+    opacity: 1;
   }
-
 }
-
-
 
 @keyframes lightUp {
-
   0% {
-
-    background:#3a4546;
-
+    background: #3a4546;
   }
-
 
   50% {
-
-    background:#c2c7b7;
-
+    background: #c2c7b7;
   }
-
 
   100% {
-
-    background:#F3FAE5;
+    background: #f3fae5;
 
     box-shadow:
-
-      0 0 15px rgba(226,253,255,.4),
-      inset 0 0 10px rgba(226,253,255,.25);
-
+      0 0 15px rgba(226, 253, 255, 0.4),
+      inset 0 0 10px rgba(226, 253, 255, 0.25);
   }
-
 }
 
-
-
 @keyframes scanLine {
-
   from {
-    top:100%;
+    top: 100%;
   }
 
   to {
-    top:-3px;
+    top: -3px;
   }
-
 }
 
-
-
-@media(max-width:700px) {
-
+@media (max-width: 700px) {
   #ctf-columns {
-
-    flex-direction:column;
-
+    flex-direction: column;
   }
-
 }
