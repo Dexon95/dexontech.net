@@ -3,49 +3,151 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#242424" />
-    <title>Dexontech.net</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" crossorigin href="/assets/index-9pEFOSjq.css">
+    <meta name="theme-color" content="#242424" />
+
+    <title>Dexontech.net</title>
+
+    <script type="module" crossorigin src="/assets/index-B17dxUDP.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DV5Se_HO.css">
   </head>
+
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div class="screen">
+    <div id="home" class="screen">
       <div class="screen-text">
         <h1>Dexon</h1>
         <h2>Web developer</h2>
       </div>
-      
+
       <img class="npc" src="/npc.png" alt="NPC" />
     </div>
 
+    <div id="ctf" class="screen hidden">
+      <noscript> You need to enable JavaScript to run this app. </noscript>
+
+      <div class="screen-text ctf-layout">
+        <div class="ctf-header">
+          <h1>Beat the house</h1>
+
+          <p>
+            <a href="/" data-nav="home">← back</a>
+          </p>
+
+          <div id="ctf-stats">
+            <span>
+              Balance:
+              <span id="ctf-balance">--</span>
+            </span>
+
+            <span class="flag hidden">
+              Flag:
+              <span id="ctf-flag">--</span>
+            </span>
+          </div>
+        </div>
+
+        <div id="ctf-columns">
+          <div id="ctf-bet-panel">
+            <form id="ctf-roll-form">
+              <label>
+                Wager
+                <input id="ctf-wager" type="number" min="1" value="10" />
+              </label>
+
+              <br />
+
+              <label>
+                Threshold:
+
+                <br />
+
+                <span id="ctf-threshold-value"></span>
+
+                ~
+
+                <span id="ctf-win-chance"></span>
+
+                ~
+
+                <span id="ctf-multiplier"></span>
+              </label>
+
+              <br />
+
+              <input
+                id="ctf-threshold"
+                type="range"
+                min="2"
+                max="6"
+                value="4"
+                step="1"
+              />
+
+              <div class="buttons">
+                <button type="submit" id="ctf-roll-btn">Roll</button>
+
+                <button type="button" id="ctf-skip-btn">Skip</button>
+              </div>
+            </form>
+
+            <form id="ctf-seed-form">
+              <label>
+                Client seed
+
+                <input
+                  id="ctf-client-seed"
+                  type="text"
+                  placeholder="decimal uint32"
+                />
+              </label>
+
+              <button type="submit" id="ctf-seed-btn">Set seed</button>
+            </form>
+          </div>
+
+          <div id="ctf-history-panel">
+            <details id="ctf-history" open>
+              <summary>Revealed server seeds</summary>
+
+              <ul id="ctf-seed-history"></ul>
+            </details>
+          </div>
+        </div>
+
+        <div id="ctf-log"></div>
+      </div>
+    </div>
 
     <svg width="0" height="0">
       <filter id="ca">
         <feColorMatrix
           type="matrix"
-          result="red_"
-          values="0.5 0.2 0 0 0
-                  0 0 0 0 0 
-                  0 0 0 0 0 
-                  0 0 0 1 0"
+          result="pink_"
+          values="
+          0.5 0.2 0 0 0
+          0 0 0 0 0
+          0 0 0 0 0
+          0 0 0 1 0"
         />
+
         <feOffset in="pink_" dx="1" dy="0" result="pink" />
+
         <feColorMatrix
           type="matrix"
           in="SourceGraphic"
-          result="blue_"
-          values="0 0 0 0 0
-                  0 0.8 0 0 0 
-                  0 0 0.8 0 0 
-                  0 0 0 1 0"
+          result="cyan_"
+          values="
+          0 0 0 0 0
+          0 0.8 0 0 0
+          0 0 0.8 0 0
+          0 0 0 1 0"
         />
+
         <feOffset in="cyan_" dx="-1" dy="0" result="cyan" />
+
         <feBlend mode="screen" in="pink" in2="cyan" />
       </filter>
     </svg>
+
   </body>
 </html>
