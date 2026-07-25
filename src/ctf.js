@@ -15,7 +15,7 @@ class Box {
 
     let balance = 100; // 100 $
 
-    const houseEdge = 1; // 2% house edge
+    const houseEdge = 1; // 1% house edge
     const maxRoll = 6; // 6-sided die
 
     let clientSeed = window.crypto.getRandomValues(new Uint32Array(1))[0] >>> 0;
