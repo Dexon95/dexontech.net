@@ -9,7 +9,7 @@ class PRNG {
     this.#N = 16;
     this.#M = 7;
     this.#b = 32;
-    this.#MASK = (1 << this.#b) - 1;
+    this.#MASK = 0xffffffff;
     this.#MAGIC = 0xffc0ffee;
   }
 
