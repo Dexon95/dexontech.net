@@ -8,8 +8,14 @@
 
     <title>Dexontech.net</title>
 
-    <script type="module" crossorigin src="/assets/index-BpQpZx95.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Clww-5H7.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/assets/index-stKfPlig.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DUl47S2N.css">
   </head>
 
   <body>
@@ -17,14 +23,100 @@
       <div class="screen-text">
         <h1>Dexon</h1>
         <h2>Web developer</h2>
-
-        <p>
-          <a id="ctf-nav" href="#" data-nav="ctf">( →</a>
-        </p>
       </div>
 
       <img class="npc" src="/npc.png" alt="NPC" />
     </div>
+
+    <main
+      id="eth"
+      class="screen eth-screen hidden"
+      aria-label="Ethereum block monitor"
+    >
+      <div class="eth-terminal">
+        <header class="eth-header">
+          <div>
+            <p class="eth-kicker">ETHEREUM MAINNET // BLOCK INSPECTOR</p>
+            <h1>ETH BLOCK STREAM</h1>
+          </div>
+          <div class="eth-connection">
+            <span class="eth-led" aria-hidden="true"></span>
+            <span id="eth-status">CONNECTING TO NODE</span>
+          </div>
+        </header>
+
+        <section class="eth-console" aria-live="polite">
+          <div class="eth-console-bar">
+            <span>BLOCK DATA</span>
+            <span id="eth-updated">WAITING FOR NEXT BLOCK...</span>
+          </div>
+
+          <div class="eth-summary">
+            <div><span>NUMBER</span><strong id="eth-number">---</strong></div>
+            <div><span>AGE</span><strong id="eth-age">---</strong></div>
+            <div>
+              <span>TRANSACTIONS</span
+              ><strong id="eth-transactions">---</strong>
+            </div>
+            <div><span>GAS USED</span><strong id="eth-gas">---</strong></div>
+          </div>
+
+          <div class="eth-data-grid">
+            <dl class="eth-fields">
+              <div>
+                <dt>HASH</dt>
+                <dd id="eth-hash">
+                  0x............................................................
+                </dd>
+              </div>
+              <div>
+                <dt>PARENT</dt>
+                <dd id="eth-parent">
+                  0x............................................................
+                </dd>
+              </div>
+              <div>
+                <dt>VALIDATOR</dt>
+                <dd id="eth-miner">
+                  0x........................................
+                </dd>
+              </div>
+              <div>
+                <dt>STATE ROOT</dt>
+                <dd id="eth-state-root">
+                  0x............................................................
+                </dd>
+              </div>
+              <div>
+                <dt>GAS LIMIT</dt>
+                <dd id="eth-gas-limit">0x........</dd>
+              </div>
+              <div>
+                <dt>BASE FEE</dt>
+                <dd id="eth-base-fee">0x........</dd>
+              </div>
+            </dl>
+
+            <section class="eth-hex-panel" aria-label="Block hexadecimal data">
+              <!-- prettier-ignore -->
+              <div class="eth-hex-title">0000  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f  ASCII</div>
+              <div class="eth-hex-fade" aria-hidden="true"></div>
+              <!-- prettier-ignore -->
+              <pre id="eth-hex">0000  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  |................................|
+0020  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  |................................|
+0040  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  |................................|
+0060  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  |................................|</pre>
+            </section>
+          </div>
+        </section>
+
+        <footer class="eth-footer">
+          <span>RPC: MAINNET</span>
+          <span id="eth-block-log">AWAITING CHAIN DATA_</span>
+          <a href="/" data-nav="home">[ EXIT MONITOR ]</a>
+        </footer>
+      </div>
+    </main>
 
     <div id="ctf" class="screen hidden">
       <noscript> You need to enable JavaScript to run this app. </noscript>
@@ -34,7 +126,7 @@
           <h1>Beat the house</h1>
 
           <p>
-            <a href="/" data-nav="home">← back</a>
+            <a href="#/" data-nav="home">← back</a>
           </p>
 
           <div id="ctf-stats">
