@@ -6,6 +6,7 @@ import Box from "./ctf.js";
 
 function setupNavigation() {
   const screens = document.querySelectorAll(".screen");
+  const routes = new Set([...screens].map((screen) => screen.id));
 
   function showScreen(id) {
     for (const screen of screens) {
@@ -13,14 +14,34 @@ function setupNavigation() {
     }
   }
 
-  function getInitialScreen() {
-    const path = window.location.pathname;
+  function getScreenFromLocation() {
+    // `/eth` is a real, shareable route; the older pages retain their hash URLs.
+    const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "");
 
-    if (path.endsWith("/ctf")) {
-      return "ctf";
+    if (pathname === "eth") {
+      return "eth";
     }
 
-    return "home";
+    const route = window.location.hash.slice(1).replace(/^\/+|\/+$/g, "");
+
+    return routes.has(route) ? route : "home";
+  }
+
+  function navigate(target) {
+    if (!routes.has(target)) {
+      return;
+    }
+
+    if (target === "eth") {
+      history.pushState(null, "", "/eth");
+      showScreen(target);
+      return;
+    }
+
+    const hash = target === "home" ? "/" : `/#/${target}`;
+
+    history.pushState(null, "", hash);
+    showScreen(target);
   }
 
   for (const link of document.querySelectorAll("[data-nav]")) {
@@ -29,17 +50,24 @@ function setupNavigation() {
 
       const target = link.dataset.nav;
 
-      history.pushState(null, "", target === "home" ? "/" : `/${target}`);
-
-      showScreen(target);
+      navigate(target);
     });
   }
 
-  window.addEventListener("popstate", () => {
-    showScreen(getInitialScreen());
+  window.addEventListener("hashchange", () => {
+    showScreen(getScreenFromLocation());
   });
 
-  showScreen(getInitialScreen());
+  window.addEventListener("popstate", () => {
+    showScreen(getScreenFromLocation());
+  });
+
+  // Give the landing screen a shareable, canonical URL on first load.
+  if (!window.location.hash && window.location.pathname !== "/eth") {
+    history.replaceState(null, "", "#/");
+  }
+
+  showScreen(getScreenFromLocation());
 }
 
 setupNavigation();
@@ -213,3 +241,201 @@ seedForm.addEventListener("submit", (event) => {
 updateStats();
 updateSeedHistory();
 updateThreshold();
+
+//
+// Ethereum block monitor
+//
+
+const ethElements = {
+  status: document.getElementById("eth-status"),
+  updated: document.getElementById("eth-updated"),
+  number: document.getElementById("eth-number"),
+  age: document.getElementById("eth-age"),
+  transactions: document.getElementById("eth-transactions"),
+  gas: document.getElementById("eth-gas"),
+  hash: document.getElementById("eth-hash"),
+  parent: document.getElementById("eth-parent"),
+  miner: document.getElementById("eth-miner"),
+  stateRoot: document.getElementById("eth-state-root"),
+  gasLimit: document.getElementById("eth-gas-limit"),
+  baseFee: document.getElementById("eth-base-fee"),
+  hexPanel: document.querySelector(".eth-hex-panel"),
+  hexTitle: document.querySelector(".eth-hex-title"),
+  hex: document.getElementById("eth-hex"),
+  log: document.getElementById("eth-block-log"),
+};
+
+const demoBlock = {
+  number: "0x10d4f",
+  timestamp: "0x55c9ea07",
+  hash: "0x7eb7c23a5ac2f2d70aa1ba4e5c56d89de5ac993590e5f6e79c394e290d998ba8",
+  parentHash:
+    "0xf8d01370e6e274f8188954fbee435b40c35b2ad3d4ab671f6d086cd559e48f04",
+  miner: "0xf927a40c8b7f6e07c5af7fa2155b4864a4112b13",
+  stateRoot:
+    "0xd64a0f63e2c7f541e6e6f8548a10a5c4e49fda7ac1aa80f9dddef648c7b9e25f",
+  gasLimit: "0x2fefd8",
+  gasUsed: "0x5208",
+  baseFeePerGas: "0xba43b7400",
+  transactionsRoot:
+    "0x4a5b78c13d11559c9541576834b5172fe8b18507c0f9f76454fcdddedd8dff7a",
+  transactions: [
+    "0xa442249820de6be754da81eafbd44a865773e4b23d7c0522d31fd03977823008",
+  ],
+};
+
+function fromHex(value) {
+  return Number.parseInt(value || "0x0", 16);
+}
+
+function prettyHex(value) {
+  return value || "0x0";
+}
+
+function makeHexDump(block) {
+  // Ethereum roots and transaction hashes are complete 32-byte (256-bit) values.
+  const transactionHashes = (block.transactions || [])
+    .map((transaction) =>
+      typeof transaction === "string" ? transaction : transaction.hash,
+    )
+    .filter(Boolean);
+  const bytes = [block.transactionsRoot, ...transactionHashes]
+    .filter(Boolean)
+    .join("")
+    .replaceAll("0x", "")
+    .padEnd(64, "0");
+  const lines = [];
+
+  for (let offset = 0; offset < bytes.length / 2; offset += 32) {
+    const chunk = bytes.slice(offset * 2, offset * 2 + 64).padEnd(64, "0");
+    const groups = chunk.match(/.{2}/g) || [];
+    const ascii = groups
+      .map((byte) => {
+        const code = Number.parseInt(byte, 16);
+        return code >= 32 && code <= 126 ? String.fromCharCode(code) : ".";
+      })
+      .join("");
+
+    lines.push(
+      `${offset.toString(16).padStart(4, "0")}  ${groups.join(" ")}  |${ascii}|`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+function fitHexPanelText() {
+  const { hexPanel, hexTitle, hex } = ethElements;
+  const referenceSize = 12;
+  const fitPadding = 1;
+
+  if (!hexPanel.clientWidth) {
+    return;
+  }
+
+  const renderedTextWidth = (element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return range.getBoundingClientRect().width;
+  };
+
+  // Measure the actual VT323 glyphs at a neutral size. Range bounds retain
+  // fractional pixels, unlike scrollWidth, so the final scale cannot round up
+  // beyond the panel's edge.
+  hexPanel.style.setProperty("--eth-hex-font-size", `${referenceSize}px`);
+  const titleStyle = getComputedStyle(hexTitle);
+  const titleWidth =
+    hexTitle.getBoundingClientRect().width -
+    Number.parseFloat(titleStyle.paddingInlineStart) -
+    Number.parseFloat(titleStyle.paddingInlineEnd);
+  const scale = Math.min(
+    (titleWidth - fitPadding) / renderedTextWidth(hexTitle),
+    (hex.getBoundingClientRect().width - fitPadding) / renderedTextWidth(hex),
+  );
+  hexPanel.style.setProperty(
+    "--eth-hex-font-size",
+    `${referenceSize * scale}px`,
+  );
+}
+
+function renderBlock(block, isLive = false) {
+  const timestamp = fromHex(block.timestamp) * 1000;
+  const secondsOld = timestamp
+    ? Math.max(0, Math.floor((Date.now() - timestamp) / 1000))
+    : 0;
+  const baseFee = block.baseFeePerGas
+    ? `${(Number(BigInt(block.baseFeePerGas) / 10000000n) / 100).toFixed(2)} GWEI`
+    : "N/A";
+
+  ethElements.number.textContent = `#${fromHex(block.number).toLocaleString()}`;
+  ethElements.age.textContent = timestamp ? `${secondsOld}s AGO` : "UNKNOWN";
+  ethElements.transactions.textContent = `${block.transactions?.length ?? 0} TX`;
+  ethElements.gas.textContent = `${fromHex(block.gasUsed).toLocaleString()} / ${fromHex(block.gasLimit).toLocaleString()}`;
+  ethElements.hash.textContent = prettyHex(block.hash);
+  ethElements.parent.textContent = prettyHex(block.parentHash);
+  ethElements.miner.textContent = prettyHex(block.miner);
+  ethElements.stateRoot.textContent = prettyHex(block.stateRoot);
+  ethElements.gasLimit.textContent = prettyHex(block.gasLimit);
+  ethElements.baseFee.textContent = baseFee;
+  ethElements.hex.textContent = makeHexDump(block);
+  fitHexPanelText();
+  ethElements.updated.textContent = isLive
+    ? `UPDATED ${new Date().toLocaleTimeString()}`
+    : "DEMO DATA // NODE UNAVAILABLE";
+  ethElements.log.textContent = isLive
+    ? `NEW BLOCK #${fromHex(block.number).toLocaleString()} RECEIVED_`
+    : "DISPLAYING CACHED BLOCK FORMAT_";
+}
+
+let lastEthBlock;
+
+async function requestLatestEthBlock() {
+  const response = await fetch("https://ethereum-rpc.publicnode.com", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_getBlockByNumber",
+      params: ["latest", false],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`RPC returned ${response.status}`);
+  }
+
+  const payload = await response.json();
+
+  if (payload.error || !payload.result) {
+    throw new Error(payload.error?.message || "No block returned");
+  }
+
+  return payload.result;
+}
+
+async function refreshEthBlock() {
+  try {
+    const block = await requestLatestEthBlock();
+
+    if (block.number !== lastEthBlock) {
+      renderBlock(block, true);
+      lastEthBlock = block.number;
+    }
+
+    ethElements.status.textContent = "LIVE NODE CONNECTION";
+  } catch (error) {
+    if (!lastEthBlock) {
+      renderBlock(demoBlock);
+    }
+
+    ethElements.status.textContent = "NODE RETRYING";
+  }
+}
+
+renderBlock(demoBlock);
+new ResizeObserver(fitHexPanelText).observe(ethElements.hexPanel);
+window.addEventListener("resize", fitHexPanelText);
+document.fonts?.ready.then(fitHexPanelText);
+refreshEthBlock();
+window.setInterval(refreshEthBlock, 12_000);
