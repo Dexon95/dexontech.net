@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Departure Mono";
+  src: url("/DepartureMono-1.500/DepartureMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body {
   margin: 0;
@@ -16,6 +24,8 @@ body {
   align-items: flex-start;
 
   overflow: hidden;
+
+  font-family: "Departure Mono", monospace;
 }
 
 .hidden {
@@ -78,8 +88,6 @@ body {
 }
 
 .screen-text {
-  font-family: "Silkscreen", sans-serif;
-
   color: #3a3a3a;
 }
 
@@ -95,7 +103,7 @@ body {
   box-shadow: none;
   filter: none;
   color: #b8c5b6;
-  font-family: "VT323", monospace;
+  font-family: "Departure Mono", monospace;
 }
 
 .eth-screen::before {
@@ -128,7 +136,7 @@ body {
   display: flex;
   flex-direction: column;
   /* Keep the data grid legible without letting viewport width enlarge fixed-width rows. */
-  font-size: 21px;
+  font-size: 22px;
   line-height: 1.05;
   letter-spacing: 0.025em;
 }
@@ -154,7 +162,7 @@ body {
   color: #81968a;
 }
 .eth-header h1 {
-  font-size: clamp(34px, 5vw, 64px);
+  font-size: 33px;
   font-weight: 400;
   color: #d2d9cb;
   letter-spacing: 0.06em;
@@ -209,12 +217,12 @@ body {
 .eth-fields dt {
   display: block;
   color: #758a7c;
-  font-size: 0.8em;
+  font-size: 11px;
 }
 .eth-summary strong {
   display: block;
   margin-top: 4px;
-  font-size: 1.15em;
+  font-size: 22px;
   font-weight: 400;
   color: #c9d3c3;
   white-space: nowrap;
@@ -242,7 +250,7 @@ body {
   margin: 3px 0 0;
   color: #b8c5b6;
   /* A full 0x hash remains visible as the side panel changes width. */
-  font-size: clamp(8px, 3.5cqw, 21px);
+  font-size: 11px;
   letter-spacing: 0;
   white-space: nowrap;
 }
@@ -276,7 +284,7 @@ body {
   margin-left: -12px;
   padding: 12px 12px 0;
   white-space: pre;
-  font-size: var(--eth-hex-font-size, 12px);
+  font-size: var(--eth-hex-font-size, 10px);
 }
 .eth-hex-fade {
   position: sticky;
@@ -299,7 +307,7 @@ body {
   color: #acbbaa;
   font-family: inherit;
   width: 100%;
-  font-size: var(--eth-hex-font-size, 12px);
+  font-size: var(--eth-hex-font-size, 10px);
   line-height: 1.33;
   white-space: pre;
 }
@@ -322,7 +330,7 @@ body {
 
 @media (max-width: 700px) {
   .eth-terminal {
-    font-size: 18px;
+    font-size: 22px;
   }
   .eth-header {
     flex-direction: column;
@@ -356,6 +364,12 @@ body {
   }
 }
 
+@media (min-width: 701px) {
+  .eth-header h1 {
+    font-size: 66px;
+  }
+}
+
 .ctf-layout {
   height: 100%;
 
@@ -367,13 +381,13 @@ body {
 h1 {
   margin: 0;
 
-  font-size: 3rem;
+  font-size: 33px;
 }
 
 h2 {
   margin: 0 0 20px 4px;
 
-  font-size: 1.15rem;
+  font-size: 22px;
 
   font-weight: 400;
 }

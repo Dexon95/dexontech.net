@@ -326,7 +326,7 @@ function makeHexDump(block) {
 
 function fitHexPanelText() {
   const { hexPanel, hexTitle, hex } = ethElements;
-  const referenceSize = 12;
+  const fontSizes = [22, 11, 10];
   const fitPadding = 1;
 
   if (!hexPanel.clientWidth) {
@@ -339,23 +339,21 @@ function fitHexPanelText() {
     return range.getBoundingClientRect().width;
   };
 
-  // Measure the actual VT323 glyphs at a neutral size. Range bounds retain
-  // fractional pixels, unlike scrollWidth, so the final scale cannot round up
-  // beyond the panel's edge.
-  hexPanel.style.setProperty("--eth-hex-font-size", `${referenceSize}px`);
+  // Departure Mono renders pixel-perfectly at 11px increments. Select the
+  // largest native size that fits instead of applying a fractional scale.
   const titleStyle = getComputedStyle(hexTitle);
   const titleWidth =
     hexTitle.getBoundingClientRect().width -
     Number.parseFloat(titleStyle.paddingInlineStart) -
     Number.parseFloat(titleStyle.paddingInlineEnd);
-  const scale = Math.min(
-    (titleWidth - fitPadding) / renderedTextWidth(hexTitle),
-    (hex.getBoundingClientRect().width - fitPadding) / renderedTextWidth(hex),
-  );
-  hexPanel.style.setProperty(
-    "--eth-hex-font-size",
-    `${referenceSize * scale}px`,
-  );
+  const fontSize = fontSizes.find((candidate) => {
+    hexPanel.style.setProperty("--eth-hex-font-size", `${candidate}px`);
+    return (
+      renderedTextWidth(hexTitle) <= titleWidth - fitPadding &&
+      renderedTextWidth(hex) <= hex.getBoundingClientRect().width - fitPadding
+    );
+  }) ?? 10;
+  hexPanel.style.setProperty("--eth-hex-font-size", `${fontSize}px`);
 }
 
 function renderBlock(block, isLive = false) {
