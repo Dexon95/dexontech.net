@@ -8,23 +8,18 @@ function setupNavigation() {
   const screens = document.querySelectorAll(".screen");
   const routes = new Set([...screens].map((screen) => screen.id));
 
+  function getScreenFromLocation() {
+    const route = window.location.pathname.replace(/^\/+|\/+$/g, "") || "home";
+
+    return routes.has(route) ? route : "home";
+  }
+
   function showScreen(id) {
     for (const screen of screens) {
       screen.classList.toggle("hidden", screen.id !== id);
     }
-  }
 
-  function getScreenFromLocation() {
-    // `/eth` is a real, shareable route; the older pages retain their hash URLs.
-    const pathname = window.location.pathname.replace(/^\/+|\/+$/g, "");
-
-    if (pathname === "eth") {
-      return "eth";
-    }
-
-    const route = window.location.hash.slice(1).replace(/^\/+|\/+$/g, "");
-
-    return routes.has(route) ? route : "home";
+    window.dispatchEvent(new CustomEvent("screenchange", { detail: id }));
   }
 
   function navigate(target) {
@@ -32,15 +27,7 @@ function setupNavigation() {
       return;
     }
 
-    if (target === "eth") {
-      history.pushState(null, "", "/eth");
-      showScreen(target);
-      return;
-    }
-
-    const hash = target === "home" ? "/" : `/#/${target}`;
-
-    history.pushState(null, "", hash);
+    history.pushState(null, "", target === "home" ? "/" : `/${target}`);
     showScreen(target);
   }
 
@@ -54,18 +41,9 @@ function setupNavigation() {
     });
   }
 
-  window.addEventListener("hashchange", () => {
-    showScreen(getScreenFromLocation());
-  });
-
   window.addEventListener("popstate", () => {
     showScreen(getScreenFromLocation());
   });
-
-  // Give the landing screen a shareable, canonical URL on first load.
-  if (!window.location.hash && window.location.pathname !== "/eth") {
-    history.replaceState(null, "", "#/");
-  }
 
   showScreen(getScreenFromLocation());
 }
@@ -437,3 +415,131 @@ window.addEventListener("resize", fitHexPanelText);
 document.fonts?.ready.then(fitHexPanelText);
 refreshEthBlock();
 window.setInterval(refreshEthBlock, 12_000);
+
+//
+// Conway's Game of Life monitor
+//
+
+const lifeCanvas = document.getElementById("life-canvas");
+const lifeContext = lifeCanvas.getContext("2d");
+const lifeCellSize = 20;
+const lifeStepInterval = 200;
+let lifeColumns = 0;
+let lifeRows = 0;
+let lifeCells = new Uint8Array();
+let lifeTimer;
+
+function seedLife() {
+  lifeCells = new Uint8Array(lifeColumns * lifeRows);
+
+  for (let index = 0; index < lifeCells.length; index += 1) {
+    lifeCells[index] = Math.random() < 0.27 ? 1 : 0;
+  }
+}
+
+function resizeLife() {
+  const bounds = lifeCanvas.getBoundingClientRect();
+  const pixelRatio = window.devicePixelRatio || 1;
+  lifeCanvas.width = Math.floor(bounds.width * pixelRatio);
+  lifeCanvas.height = Math.floor(bounds.height * pixelRatio);
+  lifeContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+  const nextColumns = Math.max(1, Math.floor(bounds.width / lifeCellSize));
+  const nextRows = Math.max(1, Math.floor(bounds.height / lifeCellSize));
+
+  if (nextColumns !== lifeColumns || nextRows !== lifeRows) {
+    lifeColumns = nextColumns;
+    lifeRows = nextRows;
+    seedLife();
+  }
+
+  drawLife();
+}
+
+function drawLife() {
+  const canvasWidth = lifeCanvas.clientWidth;
+  const canvasHeight = lifeCanvas.clientHeight;
+  const width = lifeColumns * lifeCellSize;
+  const height = lifeRows * lifeCellSize;
+  const offsetX = Math.floor((canvasWidth - width) / 2);
+  const offsetY = Math.floor((canvasHeight - height) / 2);
+  lifeContext.fillStyle = "#e7eadc";
+  lifeContext.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  for (let y = 0; y < lifeRows; y += 1) {
+    for (let x = 0; x < lifeColumns; x += 1) {
+      if (lifeCells[y * lifeColumns + x]) {
+        const cellX = offsetX + x * lifeCellSize;
+        const cellY = offsetY + y * lifeCellSize;
+        const centerX = cellX + lifeCellSize / 2;
+        const centerY = cellY + lifeCellSize / 2;
+        const aura = lifeContext.createRadialGradient(
+          centerX,
+          centerY,
+          lifeCellSize * 0.35,
+          centerX,
+          centerY,
+          lifeCellSize * 1.45,
+        );
+        aura.addColorStop(0, "rgba(91, 105, 88, 0.28)");
+        aura.addColorStop(0.55, "rgba(135, 147, 128, 0.12)");
+        aura.addColorStop(1, "rgba(135, 147, 128, 0)");
+        lifeContext.fillStyle = aura;
+        lifeContext.fillRect(
+          cellX - lifeCellSize,
+          cellY - lifeCellSize,
+          lifeCellSize * 3,
+          lifeCellSize * 3,
+        );
+
+        lifeContext.fillStyle = "#000";
+        lifeContext.fillRect(
+          cellX + 1,
+          cellY + 1,
+          lifeCellSize - 2,
+          lifeCellSize - 2,
+        );
+      }
+    }
+  }
+}
+
+function stepLife() {
+  const nextCells = new Uint8Array(lifeCells.length);
+
+  for (let y = 0; y < lifeRows; y += 1) {
+    for (let x = 0; x < lifeColumns; x += 1) {
+      let neighbors = 0;
+      for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+        for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+          if (offsetX === 0 && offsetY === 0) continue;
+          const neighborX = (x + offsetX + lifeColumns) % lifeColumns;
+          const neighborY = (y + offsetY + lifeRows) % lifeRows;
+          neighbors += lifeCells[neighborY * lifeColumns + neighborX];
+        }
+      }
+
+      const index = y * lifeColumns + x;
+      nextCells[index] = neighbors === 3 || (lifeCells[index] && neighbors === 2);
+    }
+  }
+
+  lifeCells = nextCells;
+  drawLife();
+}
+
+function setLifeRunning(isRunning) {
+  window.clearInterval(lifeTimer);
+  lifeTimer = undefined;
+
+  if (isRunning) {
+    resizeLife();
+    lifeTimer = window.setInterval(stepLife, lifeStepInterval);
+  }
+}
+
+new ResizeObserver(resizeLife).observe(lifeCanvas);
+window.addEventListener("screenchange", (event) => {
+  setLifeRunning(event.detail === "life");
+});
+setLifeRunning(window.location.pathname === "/life");
