@@ -265,7 +265,14 @@ new p5((sketch) => {
       for (let i = 0; i < Math.min(renderedAgentCount, agents.length); i++) {
         const agent = agents[i];
         if (now >= agent.nextStep) stepAgent(agent, now);
-        agent.trail.forEach(([x, y], age) => drawSymbol(agent, x, y, config.trailAlphas[age], agent.size, age === 0 ? "trail" : false));
+        const trailProgress = Math.min(1, Math.max(0, (now - agent.moveStarted) / (stepInterval / agent.pace)));
+        const easedTrailProgress = trailProgress * trailProgress * (3 - 2 * trailProgress);
+        agent.trail.forEach(([x, y], age) => {
+          const startAlpha = config.trailAlphas[age];
+          const endAlpha = config.trailAlphas[age + 1] ?? 0;
+          const alpha = startAlpha + (endAlpha - startAlpha) * easedTrailProgress;
+          drawSymbol(agent, x, y, alpha, agent.size, age === 0 ? "trail" : false);
+        });
         const progress = Math.min(1, Math.max(0, (now - agent.moveStarted) / agent.moveDuration));
         const eased = progress * progress * (3 - 2 * progress);
         if (agent.idle || agent.x !== agent.fromX || agent.y !== agent.fromY) {
