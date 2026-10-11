@@ -1,545 +1,286 @@
-import Box from "./ctf.js";
+import p5 from "p5";
+import { createBrowserSeed, createSeededRandom } from "./prng.js";
+import { config, nonTriangleSymbols } from "./config.js";
 
-//
-// Navigation
-//
+const stepInterval = 1000 / config.baseStepsPerSecond;
+const lightDuration = stepInterval * config.lightDurationMultiplier;
 
-function setupNavigation() {
-  const screens = document.querySelectorAll(".screen");
-  const routes = new Set([...screens].map((screen) => screen.id));
+new p5((sketch) => {
+  let seed;
+  let agents = [];
+  let fadingTrails = [];
+  let stats;
+  let seedDisplay;
+  let renderedAgentCount = config.maxAgentCount;
+  let fpsSampleStart;
+  let fpsSampleFrames = 0;
+  let averageFps = config.targetFrameRate;
 
-  function getScreenFromLocation() {
-    const route = window.location.pathname.replace(/^\/+|\/+$/g, "") || "home";
+  const columns = () => Math.max(1, Math.floor(sketch.width / config.cellSize));
+  const rows = () => Math.max(1, Math.floor(sketch.height / config.cellSize));
 
-    return routes.has(route) ? route : "home";
+  function randomPaceRatio(random) {
+    let ratio;
+    do {
+      const normal = Math.sqrt(-2 * Math.log(Math.max(Number.EPSILON, random()))) * Math.cos(2 * Math.PI * random());
+      ratio = normal * config.paceVariation;
+    } while (Math.abs(ratio) > config.maxPaceDeviation);
+    return ratio;
   }
 
-  function showScreen(id) {
-    for (const screen of screens) {
-      screen.classList.toggle("hidden", screen.id !== id);
-    }
-
-    window.dispatchEvent(new CustomEvent("screenchange", { detail: id }));
-  }
-
-  function navigate(target) {
-    if (!routes.has(target)) {
-      return;
-    }
-
-    history.pushState(null, "", target === "home" ? "/" : `/${target}`);
-    showScreen(target);
-  }
-
-  for (const link of document.querySelectorAll("[data-nav]")) {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-
-      const target = link.dataset.nav;
-
-      navigate(target);
+  function placeAgents() {
+    const cols = columns();
+    const rowCount = rows();
+    agents = Array.from({ length: Math.min(config.maxAgentCount, cols * rowCount) }, (_, id) => {
+      const random = createSeededRandom((seed + id) >>> 0);
+      const x = Math.floor(random() * cols);
+      const y = Math.floor(random() * rowCount);
+      const pace = 1 + randomPaceRatio(random);
+      const hue = Math.floor(random() * 360);
+      const symbolRoll = random();
+      const subtleDot = random() < config.subtleDotChance;
+      const symbol = subtleDot ? 8 : symbolRoll < config.triangleChance ? 6 + Math.floor(random() * 2)
+        : symbolRoll < config.triangleChance + config.cardSuitChance ? 9 + Math.floor(random() * config.cardSuits.length)
+        : nonTriangleSymbols[Math.floor(random() * nonTriangleSymbols.length)];
+      const rareWhite = random() < config.rareWhiteChance;
+      const color = subtleDot ? config.subtleDotColor : rareWhite ? config.white : symbol >= 9
+        ? symbol === 10 || symbol === 11 ? config.cardColors.red : config.cardColors.black
+        : `hsl(${hue} ${config.symbolColor.saturation}% ${config.symbolColor.lightness}%)`;
+      const idle = random() < config.idleChance;
+      const now = sketch.millis();
+      const moveDuration = lightDuration / pace;
+      const nextStep = now + random() * stepInterval / pace;
+      return {
+        id,
+        random,
+        x,
+        y,
+        fromX: x,
+        fromY: y,
+        color,
+        symbol,
+        subtleDot,
+        size: random() < config.symbolSizeChance ? config.symbolSizes[0] : config.symbolSizes[1],
+        pace,
+        idle,
+        moveStarted: now,
+        moveDuration,
+        nextStep: idle ? Infinity : nextStep,
+        trail: [],
+      };
     });
   }
 
-  window.addEventListener("popstate", () => {
-    showScreen(getScreenFromLocation());
-  });
+  function stepAgent(agent, now) {
+    const cols = columns();
+    const rowCount = rows();
+    agent.trail.unshift([agent.x, agent.y]);
+    agent.trail.length = Math.min(agent.trail.length, config.trailAlphas.length);
 
-  showScreen(getScreenFromLocation());
-}
-
-setupNavigation();
-
-//
-// Create game
-//
-
-const box = await new Box().createInstance();
-
-//
-// DOM
-//
-
-const balanceElement = document.getElementById("ctf-balance");
-
-const flagElement = document.getElementById("ctf-flag");
-
-const rollForm = document.getElementById("ctf-roll-form");
-
-const wagerInput = document.getElementById("ctf-wager");
-
-const thresholdInput = document.getElementById("ctf-threshold");
-
-const skipButton = document.getElementById("ctf-skip-btn");
-
-const seedForm = document.getElementById("ctf-seed-form");
-
-const clientSeedInput = document.getElementById("ctf-client-seed");
-clientSeedInput.defaultValue = box.getClientSeed();
-
-const thresholdValue = document.getElementById("ctf-threshold-value");
-
-const winChance = document.getElementById("ctf-win-chance");
-
-const multiplier = document.getElementById("ctf-multiplier");
-
-const seedHistoryElement = document.getElementById("ctf-seed-history");
-
-const logElement = document.getElementById("ctf-log");
-
-//
-// UI helpers
-//
-
-function updateStats() {
-  balanceElement.textContent = box.getBalance().toFixed(2);
-  try {
-    flagElement.textContent = box.getFlag();
-    flagElement.parentElement.classList.remove("hidden");
-  } catch (error) {
-    flagElement.textContent = "--";
-    flagElement.parentElement.classList.add("hidden");
-  }
-}
-
-function addLog(message) {
-  const entry = document.createElement("p");
-
-  entry.textContent = message;
-
-  logElement.prepend(entry);
-  console.debug(message);
-}
-
-function updateSeedHistory() {
-  // reverse seed history so that the most recent seed is at the top
-  const history = box.getSeedHistory().slice().reverse();
-
-  seedHistoryElement.innerHTML = "";
-
-  for (const seed of history) {
-    const item = document.createElement("li");
-
-    item.textContent = seed;
-
-    seedHistoryElement.appendChild(item);
+    const moves = [];
+    if (agent.y > 0) moves.push([0, -1]);
+    if (agent.x < cols - 1) moves.push([1, 0]);
+    if (agent.y < rowCount - 1) moves.push([0, 1]);
+    if (agent.x > 0) moves.push([-1, 0]);
+    const [dx, dy] = moves[Math.floor(agent.random() * moves.length)] || [0, 0];
+    agent.fromX = agent.x;
+    agent.fromY = agent.y;
+    agent.x += dx;
+    agent.y += dy;
+    agent.moveStarted = now;
+    agent.moveDuration = lightDuration / agent.pace;
+    agent.nextStep = now + stepInterval / agent.pace;
   }
 
-  console.debug("Seed history:", box.getSeedHistory());
-}
-
-function updateThreshold() {
-  const threshold = Number(thresholdInput.value);
-
-  thresholdValue.textContent = threshold;
-
-  const chance = box.getProbability(threshold) * 100;
-
-  winChance.textContent = `${chance.toFixed(1)}%`;
-
-  const mult = box.getMultiplier(threshold);
-
-  multiplier.textContent = `${mult.toFixed(2)}*`;
-
-  console.debug(
-    `Threshold updated: ${threshold}, Win Chance: ${chance.toFixed(1)}%, Multiplier: ${mult.toFixed(2)}`,
-  );
-}
-
-thresholdInput.addEventListener("input", updateThreshold);
-
-//
-// Roll
-//
-
-rollForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const wager = Number(wagerInput.value);
-
-  const threshold = Number(thresholdInput.value);
-
-  try {
-    const outcome = await box.roll(wager, threshold);
-
-    if (box.isWin(outcome, threshold)) {
-      addLog(`WIN - roll ${outcome}`);
-    } else {
-      addLog(`LOSS - roll ${outcome}`);
-    }
-
-    updateStats();
-    updateSeedHistory();
-  } catch (error) {
-    addLog(`ERROR: ${error.message}`);
-  }
-});
-
-//
-// Skip
-//
-
-skipButton.addEventListener("click", () => {
-  try {
-    box.skip();
-
-    addLog("Skipped nonce");
-  } catch (error) {
-    addLog(`ERROR: ${error.message}`);
-  }
-});
-
-//
-// Client seed
-//
-
-seedForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const seed = Number(clientSeedInput.value);
-
-  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
-    addLog("Invalid uint32 seed");
-
-    return;
-  }
-
-  box.setClientSeed(seed);
-
-  addLog(`Client seed set to ${seed}`);
-
-  updateSeedHistory();
-  updateStats();
-});
-
-//
-// Initial render
-//
-
-updateStats();
-updateSeedHistory();
-updateThreshold();
-
-//
-// Ethereum block monitor
-//
-
-const ethElements = {
-  status: document.getElementById("eth-status"),
-  updated: document.getElementById("eth-updated"),
-  number: document.getElementById("eth-number"),
-  age: document.getElementById("eth-age"),
-  transactions: document.getElementById("eth-transactions"),
-  gas: document.getElementById("eth-gas"),
-  hash: document.getElementById("eth-hash"),
-  parent: document.getElementById("eth-parent"),
-  miner: document.getElementById("eth-miner"),
-  stateRoot: document.getElementById("eth-state-root"),
-  gasLimit: document.getElementById("eth-gas-limit"),
-  baseFee: document.getElementById("eth-base-fee"),
-  hexPanel: document.querySelector(".eth-hex-panel"),
-  hexTitle: document.querySelector(".eth-hex-title"),
-  hex: document.getElementById("eth-hex"),
-  log: document.getElementById("eth-block-log"),
-};
-
-const demoBlock = {
-  number: "0x10d4f",
-  timestamp: "0x55c9ea07",
-  hash: "0x7eb7c23a5ac2f2d70aa1ba4e5c56d89de5ac993590e5f6e79c394e290d998ba8",
-  parentHash:
-    "0xf8d01370e6e274f8188954fbee435b40c35b2ad3d4ab671f6d086cd559e48f04",
-  miner: "0xf927a40c8b7f6e07c5af7fa2155b4864a4112b13",
-  stateRoot:
-    "0xd64a0f63e2c7f541e6e6f8548a10a5c4e49fda7ac1aa80f9dddef648c7b9e25f",
-  gasLimit: "0x2fefd8",
-  gasUsed: "0x5208",
-  baseFeePerGas: "0xba43b7400",
-  transactionsRoot:
-    "0x4a5b78c13d11559c9541576834b5172fe8b18507c0f9f76454fcdddedd8dff7a",
-  transactions: [
-    "0xa442249820de6be754da81eafbd44a865773e4b23d7c0522d31fd03977823008",
-  ],
-};
-
-function fromHex(value) {
-  return Number.parseInt(value || "0x0", 16);
-}
-
-function prettyHex(value) {
-  return value || "0x0";
-}
-
-function makeHexDump(block) {
-  // Ethereum roots and transaction hashes are complete 32-byte (256-bit) values.
-  const transactionHashes = (block.transactions || [])
-    .map((transaction) =>
-      typeof transaction === "string" ? transaction : transaction.hash,
-    )
-    .filter(Boolean);
-  const bytes = [block.transactionsRoot, ...transactionHashes]
-    .filter(Boolean)
-    .join("")
-    .replaceAll("0x", "")
-    .padEnd(64, "0");
-  const lines = [];
-
-  for (let offset = 0; offset < bytes.length / 2; offset += 32) {
-    const chunk = bytes.slice(offset * 2, offset * 2 + 64).padEnd(64, "0");
-    const groups = chunk.match(/.{2}/g) || [];
-    const ascii = groups
-      .map((byte) => {
-        const code = Number.parseInt(byte, 16);
-        return code >= 32 && code <= 126 ? String.fromCharCode(code) : ".";
-      })
-      .join("");
-
-    lines.push(
-      `${offset.toString(16).padStart(4, "0")}  ${groups.join(" ")}  |${ascii}|`,
-    );
-  }
-
-  return lines.join("\n");
-}
-
-function fitHexPanelText() {
-  const { hexPanel, hexTitle, hex } = ethElements;
-  const fontSizes = [22, 11, 10];
-  const fitPadding = 1;
-
-  if (!hexPanel.clientWidth) {
-    return;
-  }
-
-  const renderedTextWidth = (element) => {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    return range.getBoundingClientRect().width;
-  };
-
-  // Departure Mono renders pixel-perfectly at 11px increments. Select the
-  // largest native size that fits instead of applying a fractional scale.
-  const titleStyle = getComputedStyle(hexTitle);
-  const titleWidth =
-    hexTitle.getBoundingClientRect().width -
-    Number.parseFloat(titleStyle.paddingInlineStart) -
-    Number.parseFloat(titleStyle.paddingInlineEnd);
-  const fontSize = fontSizes.find((candidate) => {
-    hexPanel.style.setProperty("--eth-hex-font-size", `${candidate}px`);
-    return (
-      renderedTextWidth(hexTitle) <= titleWidth - fitPadding &&
-      renderedTextWidth(hex) <= hex.getBoundingClientRect().width - fitPadding
-    );
-  }) ?? 10;
-  hexPanel.style.setProperty("--eth-hex-font-size", `${fontSize}px`);
-}
-
-function renderBlock(block, isLive = false) {
-  const timestamp = fromHex(block.timestamp) * 1000;
-  const secondsOld = timestamp
-    ? Math.max(0, Math.floor((Date.now() - timestamp) / 1000))
-    : 0;
-  const baseFee = block.baseFeePerGas
-    ? `${(Number(BigInt(block.baseFeePerGas) / 10000000n) / 100).toFixed(2)} GWEI`
-    : "N/A";
-
-  ethElements.number.textContent = `#${fromHex(block.number).toLocaleString()}`;
-  ethElements.age.textContent = timestamp ? `${secondsOld}s AGO` : "UNKNOWN";
-  ethElements.transactions.textContent = `${block.transactions?.length ?? 0} TX`;
-  ethElements.gas.textContent = `${fromHex(block.gasUsed).toLocaleString()} / ${fromHex(block.gasLimit).toLocaleString()}`;
-  ethElements.hash.textContent = prettyHex(block.hash);
-  ethElements.parent.textContent = prettyHex(block.parentHash);
-  ethElements.miner.textContent = prettyHex(block.miner);
-  ethElements.stateRoot.textContent = prettyHex(block.stateRoot);
-  ethElements.gasLimit.textContent = prettyHex(block.gasLimit);
-  ethElements.baseFee.textContent = baseFee;
-  ethElements.hex.textContent = makeHexDump(block);
-  fitHexPanelText();
-  ethElements.updated.textContent = isLive
-    ? `UPDATED ${new Date().toLocaleTimeString()}`
-    : "DEMO DATA // NODE UNAVAILABLE";
-  ethElements.log.textContent = isLive
-    ? `NEW BLOCK #${fromHex(block.number).toLocaleString()} RECEIVED_`
-    : "DISPLAYING CACHED BLOCK FORMAT_";
-}
-
-let lastEthBlock;
-
-async function requestLatestEthBlock() {
-  const response = await fetch("https://ethereum-rpc.publicnode.com", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "eth_getBlockByNumber",
-      params: ["latest", false],
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`RPC returned ${response.status}`);
-  }
-
-  const payload = await response.json();
-
-  if (payload.error || !payload.result) {
-    throw new Error(payload.error?.message || "No block returned");
-  }
-
-  return payload.result;
-}
-
-async function refreshEthBlock() {
-  try {
-    const block = await requestLatestEthBlock();
-
-    if (block.number !== lastEthBlock) {
-      renderBlock(block, true);
-      lastEthBlock = block.number;
-    }
-
-    ethElements.status.textContent = "LIVE NODE CONNECTION";
-  } catch (error) {
-    if (!lastEthBlock) {
-      renderBlock(demoBlock);
-    }
-
-    ethElements.status.textContent = "NODE RETRYING";
-  }
-}
-
-renderBlock(demoBlock);
-new ResizeObserver(fitHexPanelText).observe(ethElements.hexPanel);
-window.addEventListener("resize", fitHexPanelText);
-document.fonts?.ready.then(fitHexPanelText);
-refreshEthBlock();
-window.setInterval(refreshEthBlock, 12_000);
-
-//
-// Conway's Game of Life monitor
-//
-
-const lifeCanvas = document.getElementById("life-canvas");
-const lifeContext = lifeCanvas.getContext("2d");
-const lifeCellSize = 20;
-const lifeStepInterval = 200;
-let lifeColumns = 0;
-let lifeRows = 0;
-let lifeCells = new Uint8Array();
-let lifeTimer;
-
-function seedLife() {
-  lifeCells = new Uint8Array(lifeColumns * lifeRows);
-
-  for (let index = 0; index < lifeCells.length; index += 1) {
-    lifeCells[index] = Math.random() < 0.27 ? 1 : 0;
-  }
-}
-
-function resizeLife() {
-  const bounds = lifeCanvas.getBoundingClientRect();
-  const pixelRatio = window.devicePixelRatio || 1;
-  lifeCanvas.width = Math.floor(bounds.width * pixelRatio);
-  lifeCanvas.height = Math.floor(bounds.height * pixelRatio);
-  lifeContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-
-  const nextColumns = Math.max(1, Math.floor(bounds.width / lifeCellSize));
-  const nextRows = Math.max(1, Math.floor(bounds.height / lifeCellSize));
-
-  if (nextColumns !== lifeColumns || nextRows !== lifeRows) {
-    lifeColumns = nextColumns;
-    lifeRows = nextRows;
-    seedLife();
-  }
-
-  drawLife();
-}
-
-function drawLife() {
-  const canvasWidth = lifeCanvas.clientWidth;
-  const canvasHeight = lifeCanvas.clientHeight;
-  const width = lifeColumns * lifeCellSize;
-  const height = lifeRows * lifeCellSize;
-  const offsetX = Math.floor((canvasWidth - width) / 2);
-  const offsetY = Math.floor((canvasHeight - height) / 2);
-  lifeContext.fillStyle = "#e7eadc";
-  lifeContext.fillRect(0, 0, canvasWidth, canvasHeight);
-
-  for (let y = 0; y < lifeRows; y += 1) {
-    for (let x = 0; x < lifeColumns; x += 1) {
-      if (lifeCells[y * lifeColumns + x]) {
-        const cellX = offsetX + x * lifeCellSize;
-        const cellY = offsetY + y * lifeCellSize;
-        const centerX = cellX + lifeCellSize / 2;
-        const centerY = cellY + lifeCellSize / 2;
-        const aura = lifeContext.createRadialGradient(
-          centerX,
-          centerY,
-          lifeCellSize * 0.35,
-          centerX,
-          centerY,
-          lifeCellSize * 1.45,
-        );
-        aura.addColorStop(0, "rgba(91, 105, 88, 0.28)");
-        aura.addColorStop(0.55, "rgba(135, 147, 128, 0.12)");
-        aura.addColorStop(1, "rgba(135, 147, 128, 0)");
-        lifeContext.fillStyle = aura;
-        lifeContext.fillRect(
-          cellX - lifeCellSize,
-          cellY - lifeCellSize,
-          lifeCellSize * 3,
-          lifeCellSize * 3,
-        );
-
-        lifeContext.fillStyle = "#000";
-        lifeContext.fillRect(
-          cellX + 1,
-          cellY + 1,
-          lifeCellSize - 2,
-          lifeCellSize - 2,
-        );
-      }
-    }
-  }
-}
-
-function stepLife() {
-  const nextCells = new Uint8Array(lifeCells.length);
-
-  for (let y = 0; y < lifeRows; y += 1) {
-    for (let x = 0; x < lifeColumns; x += 1) {
-      let neighbors = 0;
-      for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
-        for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
-          if (offsetX === 0 && offsetY === 0) continue;
-          const neighborX = (x + offsetX + lifeColumns) % lifeColumns;
-          const neighborY = (y + offsetY + lifeRows) % lifeRows;
-          neighbors += lifeCells[neighborY * lifeColumns + neighborX];
+  function drawSymbol(agent, x, y, alpha, size = 0.62, glow = false) {
+    const ctx = sketch.drawingContext;
+    const centerX = (x + 0.5) * config.cellSize;
+    const centerY = (y + 0.5) * config.cellSize;
+    const radius = config.cellSize * size / 2;
+    const glowScale = agent.subtleDot ? 0.15 : 1;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = agent.color;
+    ctx.fillStyle = agent.color;
+    ctx.lineWidth = Math.max(2, config.cellSize * 0.09);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowColor = agent.color;
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    if (agent.symbol >= 9) {
+      ctx.font = `${Math.round(radius * 1.8)}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      if (glow) {
+        if (glow === "trail") {
+          ctx.globalAlpha = alpha * config.trailGlow.alpha * glowScale;
+          ctx.shadowBlur = config.trailGlow.blur * glowScale;
+          ctx.fillText(config.cardSuits[agent.symbol - 9], centerX, centerY);
+        } else {
+          ctx.globalAlpha = alpha * config.headGlow.outerAlpha * glowScale;
+          ctx.shadowBlur = config.headGlow.outerBlur * glowScale;
+          ctx.fillText(config.cardSuits[agent.symbol - 9], centerX, centerY);
+          ctx.globalAlpha = alpha * config.headGlow.innerAlpha * glowScale;
+          ctx.shadowBlur = config.headGlow.innerBlur * glowScale;
+          ctx.fillText(config.cardSuits[agent.symbol - 9], centerX, centerY);
         }
       }
-
-      const index = y * lifeColumns + x;
-      nextCells[index] = neighbors === 3 || (lifeCells[index] && neighbors === 2);
+      ctx.globalAlpha = alpha;
+      ctx.shadowBlur = 0;
+      ctx.fillText(config.cardSuits[agent.symbol - 9], centerX, centerY);
+      ctx.restore();
+      return;
     }
+    if (agent.symbol === 0) {
+      ctx.rect(centerX - radius * 0.75, centerY - radius * 0.75, radius * 1.5, radius * 1.5);
+    } else if (agent.symbol === 1) {
+      ctx.arc(centerX, centerY, radius * 0.8, 0, Math.PI * 2);
+    } else if (agent.symbol === 2) {
+      ctx.moveTo(centerX - radius, centerY - radius);
+      ctx.lineTo(centerX + radius, centerY + radius);
+      ctx.moveTo(centerX - radius, centerY + radius);
+      ctx.lineTo(centerX + radius, centerY - radius);
+    } else if (agent.symbol === 3) {
+      ctx.moveTo(centerX - radius, centerY);
+      ctx.lineTo(centerX + radius, centerY);
+      ctx.moveTo(centerX, centerY - radius);
+      ctx.lineTo(centerX, centerY + radius);
+    } else if (agent.symbol === 4 || agent.symbol === 5) {
+      ctx.moveTo(centerX, centerY - radius);
+      ctx.lineTo(centerX + radius, centerY);
+      ctx.lineTo(centerX, centerY + radius);
+      ctx.lineTo(centerX - radius, centerY);
+      ctx.closePath();
+    } else if (agent.symbol === 6 || agent.symbol === 7) {
+      ctx.moveTo(centerX, centerY - radius);
+      ctx.lineTo(centerX + radius, centerY + radius);
+      ctx.lineTo(centerX - radius, centerY + radius);
+      ctx.closePath();
+    } else {
+      ctx.arc(centerX, centerY, Math.max(1, radius * (agent.subtleDot ? 0.4 : 0.13)), 0, Math.PI * 2);
+    }
+    const filled = agent.symbol === 5 || agent.symbol === 7 || agent.symbol === 8;
+    if (glow) {
+      if (glow === "trail") {
+        ctx.globalAlpha = alpha * config.trailGlow.alpha * glowScale;
+        ctx.shadowBlur = config.trailGlow.blur * glowScale;
+        if (filled) ctx.fill();
+        else ctx.stroke();
+      } else {
+        ctx.globalAlpha = alpha * config.headGlow.outerAlpha * glowScale;
+        ctx.shadowBlur = config.headGlow.outerBlur * glowScale;
+        if (filled) ctx.fill();
+        else ctx.stroke();
+        ctx.globalAlpha = alpha * config.headGlow.innerAlpha * glowScale;
+        ctx.shadowBlur = config.headGlow.innerBlur * glowScale;
+        if (filled) ctx.fill();
+        else ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = Math.max(2, config.cellSize * 0.09);
+    ctx.shadowBlur = 0;
+    if (filled) ctx.fill();
+    else ctx.stroke();
+    ctx.restore();
   }
 
-  lifeCells = nextCells;
-  drawLife();
-}
+  sketch.setup = () => {
+    const container = document.getElementById("canvas");
+    sketch.createCanvas(container.clientWidth, container.clientHeight).parent(container);
+    sketch.pixelDensity(1);
+    sketch.frameRate(config.targetFrameRate);
+    stats = document.getElementById("render-fps");
+    seedDisplay = document.getElementById("render-seed");
+    seedDisplay.addEventListener("click", async () => {
+      if (seed === undefined) return;
+      const label = `Seed: ${seed}`;
+      try {
+        await navigator.clipboard.writeText(String(seed));
+        seedDisplay.textContent = "Copied!";
+      } catch {
+        seedDisplay.textContent = "Copy failed";
+      }
+      window.setTimeout(() => { seedDisplay.textContent = label; }, 1500);
+    });
+    const urlSeed = new URLSearchParams(window.location.search).get("seed");
+    const parsedSeed = urlSeed?.trim() ? Number(urlSeed) : NaN;
+    const seedPromise = Number.isInteger(parsedSeed) && parsedSeed >= 0 && parsedSeed <= 0xffffffff
+      ? Promise.resolve(parsedSeed)
+      : createBrowserSeed();
+    seedPromise.then((initialSeed) => {
+      seed = initialSeed;
+      seedDisplay.textContent = `Seed: ${seed}`;
+      const url = new URL(window.location.href);
+      url.searchParams.set("seed", seed);
+      window.history.replaceState(null, "", url);
+      placeAgents();
+    });
 
-function setLifeRunning(isRunning) {
-  window.clearInterval(lifeTimer);
-  lifeTimer = undefined;
+    new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      const size = [Math.round(width), Math.round(height)];
+      if (size[0] > 0 && size[1] > 0 && (size[0] !== sketch.width || size[1] !== sketch.height)) {
+        sketch.resizeCanvas(...size);
+        if (seed !== undefined) {
+          for (const agent of agents) {
+            agent.x = Math.min(agent.x, columns() - 1);
+            agent.y = Math.min(agent.y, rows() - 1);
+            agent.fromX = agent.x;
+            agent.fromY = agent.y;
+            agent.trail = agent.trail.filter(([x, y]) => x < columns() && y < rows());
+          }
+        }
+      }
+    }).observe(container);
+  };
 
-  if (isRunning) {
-    resizeLife();
-    lifeTimer = window.setInterval(stepLife, lifeStepInterval);
-  }
-}
-
-new ResizeObserver(resizeLife).observe(lifeCanvas);
-window.addEventListener("screenchange", (event) => {
-  setLifeRunning(event.detail === "life");
+  sketch.draw = () => {
+    sketch.background(...config.background);
+    if (seed !== undefined) {
+      const now = sketch.millis();
+      fpsSampleFrames++;
+      if (fpsSampleStart === undefined) fpsSampleStart = now;
+      if (now - fpsSampleStart >= config.fpsSampleIntervalMs) {
+        averageFps = fpsSampleFrames * 1000 / (now - fpsSampleStart);
+        fpsSampleFrames = 0;
+        fpsSampleStart = now;
+        if (averageFps < config.targetFrameRate * config.lowFrameRateRatio) {
+          const previousAgentCount = renderedAgentCount;
+          renderedAgentCount = Math.max(1, Math.floor(renderedAgentCount * (1 - config.agentReductionRatio)));
+          for (let i = renderedAgentCount; i < previousAgentCount; i++) {
+            const agent = agents[i];
+            if (agent) {
+              const cells = agent.trail.map(([x, y], age) => [x, y, config.trailAlphas[age]]);
+              cells.push([agent.x, agent.y, config.headLightMaxAlpha]);
+              fadingTrails.push({ agent, cells, startedAt: now });
+            }
+          }
+        } else if (averageFps > config.targetFrameRate * config.lowFrameRateRatio) {
+          renderedAgentCount = Math.min(config.maxAgentCount, renderedAgentCount + config.agentRecoveryPerSecond);
+          fadingTrails = fadingTrails.filter(({ agent }) => agent.id >= renderedAgentCount);
+        }
+      }
+      for (let i = 0; i < Math.min(renderedAgentCount, agents.length); i++) {
+        const agent = agents[i];
+        if (now >= agent.nextStep) stepAgent(agent, now);
+        agent.trail.forEach(([x, y], age) => drawSymbol(agent, x, y, config.trailAlphas[age], agent.size, age === 0 ? "trail" : false));
+        const progress = Math.min(1, Math.max(0, (now - agent.moveStarted) / agent.moveDuration));
+        const eased = progress * progress * (3 - 2 * progress);
+        if (agent.idle || agent.x !== agent.fromX || agent.y !== agent.fromY) {
+          const alpha = agent.idle ? config.headLightMaxAlpha : config.headLightStartAlpha + (config.headLightMaxAlpha - config.headLightStartAlpha) * eased;
+          drawSymbol(agent, agent.x, agent.y, alpha, agent.size, true);
+        }
+      }
+      fadingTrails = fadingTrails.filter(({ startedAt }) => now - startedAt < config.removedAgentTrailFadeMs);
+      for (const { agent, cells, startedAt } of fadingTrails) {
+        const fade = 1 - (now - startedAt) / config.removedAgentTrailFadeMs;
+        cells.forEach(([x, y, alpha]) => drawSymbol(agent, x, y, alpha * fade, agent.size));
+      }
+    }
+    if (sketch.frameCount % 4 === 0) {
+      stats.textContent = `${Math.round(averageFps)} FPS avg`;
+    }
+  };
 });
-setLifeRunning(window.location.pathname === "/life");

@@ -1,71 +1,27 @@
-class PRNG {
-  #N;
-  #M;
-  #b;
-  #MASK;
-  #MAGIC;
+export function createSeededRandom(seed) {
+  let state = seed;
 
-  constructor() {
-    this.#N = 16;
-    this.#M = 7;
-    this.#b = 32;
-    this.#MASK = 0xffffffff;
-    this.#MAGIC = 0xffc0ffee;
-  }
-
-  rol(x, d) {
-    x = x >>> 0;
-    const ans = ((x << d) & this.#MASK) >>> 0;
-    return (ans | (x >>> (this.#b - d))) >>> 0;
-  }
-
-  createPRNG() {
-    let index = this.#N;
-    let STATE;
-
-    const N = this.#N;
-    const M = this.#M;
-    const b = this.#b;
-    const MAGIC = this.#MAGIC;
-    const rol = this.rol.bind(this);
-
-    if (!!STATE) {
-      if (STATE.length !== N) {
-        throw new Error(`state must have length ${N}`);
-      }
-      STATE = STATE.slice();
-    } else {
-      STATE = new Array(N).fill(0);
-      for (let i = 0; i < N; i++) {
-        const buf = new Uint32Array(1);
-        crypto.getRandomValues(buf);
-        STATE[i] = buf[0] >>> 0;
-      }
-    }
-
-    function twist() {
-      for (let i = 0; i < N; i++) {
-        STATE[i] ^= rol(STATE[(i + 1) % N], 3);
-        STATE[i] ^= rol(STATE[(i + M) % N], b - 9);
-        STATE[i] ^= MAGIC;
-        STATE[i] >>>= 0;
-      }
-    }
-
-    function rand() {
-      if (index >= N) {
-        twist();
-        index = 0;
-      }
-      let y = STATE[index] >>> 0;
-      y ^= rol(y, 7);
-      y ^= rol(y, b - 15);
-      index += 1;
-      return y >>> 0;
-    }
-
-    return { rand };
-  }
+  return function random() {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-export default new PRNG().createPRNG();
+export async function createBrowserSeed() {
+  const fingerprint = JSON.stringify({
+    userAgent: navigator.userAgent,
+    language: navigator.language,
+    languages: navigator.languages,
+    platform: navigator.platform,
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemory: navigator.deviceMemory,
+  });
+  const data = new TextEncoder().encode(fingerprint);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const seed = new DataView(digest).getUint32(0, false);
+
+  return seed;
+}
