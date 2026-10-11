@@ -2,7 +2,7 @@ export const config = {
   cellSize: 24,
   maxAgentCount: 150,
   targetFrameRate: 30,
-  baseStepsPerSecond: 3,
+  baseStepsPerSecond: 2,
   lightDurationMultiplier: 1.4,
   paceVariation: 0.2,
   maxPaceDeviation: 0.5,
