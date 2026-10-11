@@ -67,6 +67,8 @@ new p5((sketch) => {
         moveDuration,
         nextStep: idle ? Infinity : nextStep,
         trail: [],
+        directionX: 0,
+        directionY: 0,
       };
     });
   }
@@ -82,7 +84,12 @@ new p5((sketch) => {
     if (agent.x < cols - 1) moves.push([1, 0]);
     if (agent.y < rowCount - 1) moves.push([0, 1]);
     if (agent.x > 0) moves.push([-1, 0]);
-    const [dx, dy] = moves[Math.floor(agent.random() * moves.length)] || [0, 0];
+    const options = moves.filter(([dx, dy]) => dx !== -agent.directionX || dy !== -agent.directionY);
+    const [dx, dy] = options[Math.floor(agent.random() * options.length)] || [0, 0];
+    if (dx || dy) {
+      agent.directionX = dx;
+      agent.directionY = dy;
+    }
     agent.fromX = agent.x;
     agent.fromY = agent.y;
     agent.x += dx;
