@@ -1,6 +1,7 @@
 import p5 from "p5";
 import { createBrowserSeed, createSeededRandom } from "./prng.js";
-import { config, nonTriangleSymbols } from "./config.js";
+import { config } from "./config.js";
+import { selectFeatures } from "./catalogue.js";
 
 const stepInterval = 1000 / config.baseStepsPerSecond;
 const lightDuration = stepInterval * config.lightDurationMultiplier;
@@ -8,7 +9,6 @@ const lightDuration = stepInterval * config.lightDurationMultiplier;
 new p5((sketch) => {
   let seed;
   let agents = [];
-  let fadingTrails = [];
   const symbolSprites = new Map();
   let stats;
   let seedDisplay;
@@ -20,128 +20,53 @@ new p5((sketch) => {
   const columns = () => Math.max(1, Math.floor(sketch.width / config.cellSize));
   const rows = () => Math.max(1, Math.floor(sketch.height / config.cellSize));
 
-  function randomGaussian(random) {
-    return (
-      Math.sqrt(-2 * Math.log(Math.max(Number.EPSILON, random()))) *
-      Math.cos(2 * Math.PI * random())
-    );
-  }
-
-  function randomPaceRatio(random) {
-    let ratio;
-    do {
-      ratio = randomGaussian(random) * config.paceVariation;
-    } while (Math.abs(ratio) > config.maxPaceDeviation);
-    return ratio;
-  }
-
   function placeAgents() {
-    const cols = columns();
-    const rowCount = rows();
-    agents = Array.from(
-      { length: Math.min(config.maxAgentCount, cols * rowCount) },
-      (_, id) => {
-        const random = createSeededRandom((seed + id) >>> 0);
-        const x = Math.floor(random() * cols);
-        const y = Math.floor(random() * rowCount);
-        const pace = 1 + randomPaceRatio(random);
-        const hue = Math.floor(random() * 360);
-        const symbolRoll = random();
-        const subtleDot = random() < config.subtleDotChance;
-        const symbol = subtleDot
-          ? 8
-          : symbolRoll < config.triangleChance
-            ? 6 + Math.floor(random() * 2)
-            : symbolRoll < config.triangleChance + config.cardSuitChance
-              ? 9 + Math.floor(random() * config.cardSuits.length)
-              : nonTriangleSymbols[
-                  Math.floor(random() * nonTriangleSymbols.length)
-                ];
-        const rareWhite = random() < config.rareWhiteChance;
-        const saturation = Math.max(
-          config.symbolColor.saturationMin,
-          Math.min(
-            config.symbolColor.saturationMax,
-            config.symbolColor.saturation +
-              randomGaussian(random) * config.symbolColor.saturationDeviation,
-          ),
-        );
-        const lightness = Math.max(
-          config.symbolColor.lightnessMin,
-          Math.min(
-            config.symbolColor.lightnessMax,
-            config.symbolColor.lightness +
-              randomGaussian(random) * config.symbolColor.lightnessDeviation,
-          ),
-        );
-        const color = subtleDot
-          ? config.subtleDotColor
-          : rareWhite
-            ? config.white
-            : symbol >= 9
-              ? symbol === 10 || symbol === 11
-                ? config.cardColors.red
-                : config.cardColors.black
-              : `hsl(${hue} ${saturation}% ${lightness}%)`;
-        const idle = random() < config.idleChance;
+    agents = Array(config.maxAgentCount).fill(null);
+    for (let id = 0; id < config.maxAgentCount; id++) {
+      const random = createSeededRandom((seed + id) >>> 0);
+      const x = Math.floor(random() * columns());
+      const y = Math.floor(random() * rows());
+      selectFeatures(random, id, seed).then((features) => {
         const now = sketch.millis();
-        const moveDuration = lightDuration / pace;
-        const nextStep = now + (random() * stepInterval) / pace;
-        return {
-          id,
-          random,
-          x,
-          y,
-          fromX: x,
-          fromY: y,
-          color,
-          symbol,
-          subtleDot,
-          size:
-            random() < config.symbolSizeChance
-              ? config.symbolSizes[0]
-              : config.symbolSizes[1],
-          pace,
-          idle,
-          moveStarted: now,
-          moveDuration,
-          nextStep: idle ? Infinity : nextStep,
-          trail: [],
-          directionX: 0,
-          directionY: 0,
+        const { pace, shape, color, size, idle } = features;
+        agents[id] = {
+          id, random, x, y, fromX: x, fromY: y, color,
+          symbol: shape.symbol, subtleDot: shape.subtleDot, size, pace, idle,
+          moveStarted: now, moveDuration: lightDuration / pace,
+          nextStep: idle ? Infinity : now + (random() * stepInterval) / pace,
+          trail: [], directionX: 0, directionY: 0, sprites: {},
+          pausedAt: null, pausedHeadAlpha: null,
         };
-      },
-    );
+      }).catch((error) => console.error(`Failed to initialize snake ${id}:`, error));
+    }
   }
 
   function stepAgent(agent, now) {
     const cols = columns();
     const rowCount = rows();
-    agent.trail.unshift([agent.x, agent.y]);
-    agent.trail.length = Math.min(
-      agent.trail.length,
-      config.trailAlphas.length,
-    );
-
-    const moves = [];
-    if (agent.y > 0) moves.push([0, -1]);
-    if (agent.x < cols - 1) moves.push([1, 0]);
-    if (agent.y < rowCount - 1) moves.push([0, 1]);
-    if (agent.x > 0) moves.push([-1, 0]);
-    const options = moves.filter(
-      ([dx, dy]) => dx !== -agent.directionX || dy !== -agent.directionY,
-    );
-    const [dx, dy] = options[Math.floor(agent.random() * options.length)] || [
-      0, 0,
-    ];
-    if (dx || dy) {
-      agent.directionX = dx;
-      agent.directionY = dy;
-    }
+    // Draw regardless of boundaries, so an edge does not change future rolls.
+    const directions = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    const options = directions.filter(([dx, dy]) => dx !== -agent.directionX || dy !== -agent.directionY);
+    const [dx, dy] = options[Math.floor(agent.random() * options.length)];
+    agent.directionX = dx;
+    agent.directionY = dy;
     agent.fromX = agent.x;
     agent.fromY = agent.y;
-    agent.x += dx;
-    agent.y += dy;
+    const outside = agent.x < 0 || agent.x >= cols || agent.y < 0 || agent.y >= rowCount;
+    const nextX = outside ? Math.max(0, Math.min(cols - 1, agent.x)) : agent.x + dx;
+    const nextY = outside ? Math.max(0, Math.min(rowCount - 1, agent.y)) : agent.y + dy;
+    if (outside || (nextX >= 0 && nextX < cols && nextY >= 0 && nextY < rowCount)) {
+      if (nextX !== agent.x || nextY !== agent.y) {
+        agent.trail.unshift([agent.x, agent.y]);
+        agent.trail.length = Math.min(agent.trail.length, config.trailAlphas.length);
+        agent.x = nextX;
+        agent.y = nextY;
+      }
+    }
+    if (agent.x === agent.fromX && agent.y === agent.fromY) {
+      const elapsed = Math.max(0, now - agent.moveStarted) / (stepInterval / agent.pace);
+      for (const cell of agent.trail) cell[2] = (cell[2] ?? 0) + elapsed;
+    }
     agent.moveStarted = now;
     agent.moveDuration = lightDuration / agent.pace;
     agent.nextStep = now + stepInterval / agent.pace;
@@ -248,28 +173,33 @@ new p5((sketch) => {
   }
 
   function drawSymbol(agent, x, y, alpha, size = 0.62, glow = false) {
-    const key = JSON.stringify([
-      agent.color,
-      agent.symbol,
-      agent.subtleDot,
-      size,
-      glow,
-    ]);
-    let sprite = symbolSprites.get(key);
+    const spriteType = glow || "plain";
+    let sprite = agent.sprites[spriteType];
     if (!sprite) {
-      const padding = config.cellSize;
-      sprite = document.createElement("canvas");
-      sprite.width = sprite.height = config.cellSize + padding * 2;
-      renderSymbol(
-        sprite.getContext("2d"),
-        agent,
-        1,
-        1,
-        1,
+      const key = JSON.stringify([
+        agent.color,
+        agent.symbol,
+        agent.subtleDot,
         size,
         glow,
-      );
-      symbolSprites.set(key, sprite);
+      ]);
+      sprite = symbolSprites.get(key);
+      if (!sprite) {
+        const padding = config.cellSize;
+        sprite = document.createElement("canvas");
+        sprite.width = sprite.height = config.cellSize + padding * 2;
+        renderSymbol(
+          sprite.getContext("2d"),
+          agent,
+          1,
+          1,
+          1,
+          size,
+          glow,
+        );
+        symbolSprites.set(key, sprite);
+      }
+      agent.sprites[spriteType] = sprite;
     }
     const offset = config.cellSize;
     const ctx = sketch.drawingContext;
@@ -287,7 +217,7 @@ new p5((sketch) => {
     const container = document.getElementById("canvas");
     sketch
       .createCanvas(container.clientWidth, container.clientHeight)
-      .parent(container);
+      .parent(container.querySelector(".crt-content"));
     sketch.pixelDensity(1);
     sketch.frameRate(config.targetFrameRate);
     stats = document.getElementById("render-fps");
@@ -331,17 +261,6 @@ new p5((sketch) => {
         (size[0] !== sketch.width || size[1] !== sketch.height)
       ) {
         sketch.resizeCanvas(...size);
-        if (seed !== undefined) {
-          for (const agent of agents) {
-            agent.x = Math.min(agent.x, columns() - 1);
-            agent.y = Math.min(agent.y, rows() - 1);
-            agent.fromX = agent.x;
-            agent.fromY = agent.y;
-            agent.trail = agent.trail.filter(
-              ([x, y]) => x < columns() && y < rows(),
-            );
-          }
-        }
       }
     }).observe(container);
   };
@@ -356,85 +275,55 @@ new p5((sketch) => {
         averageFps = (fpsSampleFrames * 1000) / (now - fpsSampleStart);
         fpsSampleFrames = 0;
         fpsSampleStart = now;
-        if (averageFps < config.targetFrameRate * config.lowFrameRateRatio) {
-          const previousAgentCount = renderedAgentCount;
-          renderedAgentCount = Math.max(
-            1,
-            Math.floor(renderedAgentCount * (1 - config.agentReductionRatio)),
-          );
-          for (let i = renderedAgentCount; i < previousAgentCount; i++) {
-            const agent = agents[i];
-            if (agent) {
-              const cells = agent.trail.map(([x, y], age) => [
-                x,
-                y,
-                config.trailAlphas[age],
-              ]);
-              cells.push([agent.x, agent.y, config.headLightMaxAlpha]);
-              fadingTrails.push({ agent, cells, startedAt: now });
-            }
-          }
-        } else if (
-          averageFps >
-          config.targetFrameRate * config.lowFrameRateRatio
-        ) {
-          renderedAgentCount = Math.min(
-            config.maxAgentCount,
-            renderedAgentCount + config.agentRecoveryPerSecond,
-          );
-          fadingTrails = fadingTrails.filter(
-            ({ agent }) => agent.id >= renderedAgentCount,
-          );
+        if (averageFps <= config.pauseFrameRate) {
+          renderedAgentCount = Math.max(1, Math.floor(renderedAgentCount * (1 - config.agentReductionRatio)));
+        } else {
+          renderedAgentCount = Math.min(config.maxAgentCount, renderedAgentCount + config.agentRecoveryPerSecond);
         }
       }
-      for (let i = 0; i < Math.min(renderedAgentCount, agents.length); i++) {
+      for (let i = 0; i < agents.length; i++) {
         const agent = agents[i];
-        if (now >= agent.nextStep) stepAgent(agent, now);
-        const trailProgress = Math.min(
-          1,
-          Math.max(0, (now - agent.moveStarted) / (stepInterval / agent.pace)),
-        );
-        const easedTrailProgress =
-          trailProgress * trailProgress * (3 - 2 * trailProgress);
-        agent.trail.forEach(([x, y], age) => {
-          const startAlpha = config.trailAlphas[age];
-          const endAlpha = config.trailAlphas[age + 1] ?? 0;
-          const alpha =
-            startAlpha + (endAlpha - startAlpha) * easedTrailProgress;
-          drawSymbol(
-            agent,
-            x,
-            y,
-            alpha,
-            agent.size,
-            "trail",
-          );
+        if (!agent) continue;
+        const paused = i >= renderedAgentCount;
+        if (paused && agent.pausedAt === null) {
+          agent.pausedAt = now;
+          const progress = Math.min(1, Math.max(0, (now - agent.moveStarted) / agent.moveDuration));
+          const eased = progress * progress * (3 - 2 * progress);
+          agent.pausedHeadAlpha = agent.idle || (agent.x === agent.fromX && agent.y === agent.fromY) ? config.headLightMaxAlpha : config.headLightStartAlpha + (config.headLightMaxAlpha - config.headLightStartAlpha) * eased;
+        } else if (!paused && agent.pausedAt !== null) {
+          const duration = now - agent.pausedAt;
+          for (const cell of agent.trail) cell[2] = (cell[2] ?? 0) + duration / (stepInterval / agent.pace);
+          agent.moveStarted += duration;
+          agent.nextStep += duration;
+          agent.pausedAt = null;
+        }
+        if (!paused && now >= agent.nextStep) stepAgent(agent, now);
+        const trailProgress = Math.max(0, (now - agent.moveStarted) / (stepInterval / agent.pace));
+        agent.trail.forEach(([x, y, extraAge = 0], age) => {
+          const progress = age + extraAge + trailProgress;
+          const index = Math.floor(progress);
+          const fraction = progress - index;
+          const eased = fraction * fraction * (3 - 2 * fraction);
+          const start = config.trailAlphas[index] ?? 0;
+          const end = config.trailAlphas[index + 1] ?? 0;
+          if (start > 0) drawSymbol(agent, x, y, start + (end - start) * eased, agent.size, "trail");
         });
         const progress = Math.min(
           1,
           Math.max(0, (now - agent.moveStarted) / agent.moveDuration),
         );
         const eased = progress * progress * (3 - 2 * progress);
-        if (agent.idle || agent.x !== agent.fromX || agent.y !== agent.fromY) {
-          const alpha = agent.idle
+        {
+          const alpha = paused ? agent.pausedHeadAlpha : agent.idle || (agent.x === agent.fromX && agent.y === agent.fromY)
             ? config.headLightMaxAlpha
             : config.headLightStartAlpha +
               (config.headLightMaxAlpha - config.headLightStartAlpha) * eased;
           drawSymbol(agent, agent.x, agent.y, alpha, agent.size, true);
         }
       }
-      fadingTrails = fadingTrails.filter(
-        ({ startedAt }) => now - startedAt < config.removedAgentTrailFadeMs,
-      );
-      for (const { agent, cells, startedAt } of fadingTrails) {
-        const fade = 1 - (now - startedAt) / config.removedAgentTrailFadeMs;
-        cells.forEach(([x, y, alpha]) =>
-          drawSymbol(agent, x, y, alpha * fade, agent.size),
-        );
-      }
     }
     if (sketch.frameCount % 4 === 0) {
-      stats.textContent = `${Math.round(averageFps)} FPS avg · ${Math.min(renderedAgentCount, agents.length)}`;
+      stats.textContent = `${Math.round(averageFps)} FPS avg · ${agents.filter(Boolean).length}`;
     }
   };
 });

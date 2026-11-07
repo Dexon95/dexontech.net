@@ -33,10 +33,9 @@ export const config = {
   headLightMaxAlpha: 0.9,
   background: [3, 7, 12],
   fpsSampleIntervalMs: 1000,
-  lowFrameRateRatio: 0.9,
+  pauseFrameRate: 6,
   agentReductionRatio: 0.2,
   agentRecoveryPerSecond: 1,
-  removedAgentTrailFadeMs: 1500,
   trailGlow: { alpha: 0.08, outerAlpha: 0.035 },
   headGlow: { alpha: 0.16, outerAlpha: 0.07 },
 };
